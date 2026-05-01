@@ -80,6 +80,17 @@ async function runMigrations(db) {
     )
   `);
 
+  await db.exec(`
+    CREATE TABLE IF NOT EXISTS alert_settings (
+      id             ${pk},
+      user_id        INTEGER NOT NULL UNIQUE,
+      alert_email    TEXT NOT NULL,
+      threshold_days INTEGER NOT NULL DEFAULT 7,
+      enabled        INTEGER NOT NULL DEFAULT 1,
+      last_alerted_at TEXT
+    )
+  `);
+
   // Indexes — ignore errors if they already exist
   const indexes = [
     'CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id)',

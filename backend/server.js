@@ -7,6 +7,9 @@ const { errorHandler } = require('./middleware/errorHandler');
 const { requireAuth } = require('./middleware/auth');
 const { getDatabase } = require('./db/database');
 
+const cron = require('node-cron');
+const { checkAndSendAlerts } = require('./services/alertService');
+
 const authRouter = require('./routes/auth');
 const sessionsRouter = require('./routes/sessions');
 const paymentsRouter = require('./routes/payments');
@@ -16,6 +19,7 @@ const reportsRouter = require('./routes/reports');
 const configRouter = require('./routes/config');
 const importRouter = require('./routes/import');
 const adminRouter = require('./routes/admin');
+const alertsRouter = require('./routes/alerts');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -39,6 +43,7 @@ app.use('/api/reports', requireAuth, reportsRouter);
 app.use('/api/config', requireAuth, configRouter);
 app.use('/api/import', requireAuth, importRouter);
 app.use('/api/admin', requireAuth, adminRouter);
+app.use('/api/alerts', requireAuth, alertsRouter);
 
 app.use(errorHandler);
 
@@ -47,6 +52,12 @@ async function start() {
   app.listen(PORT, () => {
     console.log(`Hours Tracker API listening on http://localhost:${PORT}`);
   });
+
+  // Run overdue alert check daily at 9:00 AM
+  cron.schedule('0 9 * * *', () => {
+    checkAndSendAlerts().catch((err) => console.error('[alerts] cron error:', err));
+  });
+  console.log('[alerts] Daily check scheduled at 09:00');
 }
 
 start().catch((err) => {

@@ -2,6 +2,7 @@ const express = require('express');
 const { getDatabase } = require('../db/database');
 const { getAllTimeSummary, getMonthlyBreakdown } = require('../services/balancerService');
 const { buildWorkbook } = require('../services/reportService');
+const { buildInvoicePdf } = require('../services/invoiceService');
 
 const router = express.Router();
 
@@ -23,6 +24,16 @@ router.get('/export', async (req, res) => {
   res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
   res.setHeader('Content-Disposition', `attachment; filename="${name}"`);
   res.send(Buffer.from(buf));
+});
+
+router.get('/invoice', async (req, res) => {
+  const { month } = req.query;
+  if (!month) return res.status(400).json({ error: 'month query param is required (e.g. ?month=Apr-2025)' });
+  const pdf = await buildInvoicePdf({ userId: req.user.id, salaryMonth: month });
+  const name = `invoice_${month.replace(/\s/g, '_')}.pdf`;
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `attachment; filename="${name}"`);
+  res.send(pdf);
 });
 
 module.exports = router;
