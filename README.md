@@ -2,7 +2,7 @@
 
 A **local-only** web app for one instructor: pull sessions from **Google Calendar**, compute **EGP** earnings from editable rules, log **payments** in **SQLite**, and view balances, charts, and **Excel** export in the browser at **http://localhost:3000**.
 
-- **Backend:** Node.js 22.5+, Express, built-in **`node:sqlite`**, `googleapis`, `exceljs`, `date-fns`, `dotenv`
+- **Backend:** Node.js 22.5+, Express, built-in **`node:sqlite`**, `googleapis`, `exceljs`, `pdfkit`, `nodemailer`, `node-cron`, `date-fns`, `dotenv`
 - **Frontend:** React 18, Vite, Tailwind CSS, TanStack Query, React Router, Recharts, Sonner
 - **Data:** `backend/tracker.db` (auto-created), root `config.json` (human-editable)
 
@@ -70,6 +70,12 @@ npm run install:all
 | `DB_PATH` | SQLite file, relative to **backend/** (default `./tracker.db`) |
 | `CONFIG_PATH` | Path to `config.json`, relative to **backend/** (default `../config.json`) |
 | `NODE_ENV` | `development` shows error stacks in JSON responses |
+| `JWT_SECRET` | Secret for signing tokens — change in production |
+| `SMTP_HOST` | SMTP server (e.g. `smtp.gmail.com`) |
+| `SMTP_PORT` | SMTP port (default `587`) |
+| `SMTP_USER` | SMTP login email |
+| `SMTP_PASS` | SMTP password or app password |
+| `SMTP_FROM` | From address shown in alert emails |
 
 ### `config.json` (root)
 
@@ -83,6 +89,37 @@ npm run install:all
 | `diplomas` | Track name → `{ color, milestones: { MilestoneName: payoutEGP } }` |
 
 You can edit in **Settings** in the UI or by hand; the API re-reads the file on each request.
+
+---
+
+## Authentication
+
+The app uses **JWT** authentication. Each user has their own data (sessions, payments, settings).
+
+1. Open the app → click **Register** → create an account with email + password.
+2. Log in — your JWT is stored in `localStorage` and attached to every API request.
+3. Use **Sign out** in the sidebar to log out.
+
+> There is no admin-created accounts — anyone who can reach the URL can register. In production, restrict this via network access or add invite-only registration.
+
+---
+
+## Email alerts
+
+Set up overdue payment alerts in the **Alerts** page:
+
+1. Add SMTP credentials to `.env` (see table above — Gmail App Passwords work well).
+2. Go to **Alerts** in the sidebar.
+3. Enter your email, set how many days overdue before alerting, and save.
+4. Click **Send test alert** to verify your SMTP config works.
+
+The server checks every morning at **9:00 AM** and emails you if any salary cycle is unpaid past your threshold.
+
+---
+
+## PDF invoices
+
+On the **Monthly** page, click the download icon on any salary cycle row to get a PDF invoice for that cycle. The invoice includes session breakdown, payments received, and outstanding balance.
 
 ---
 
@@ -165,9 +202,10 @@ npm run dev
 | **Dashboard** | Totals, bar chart (expected per month), line chart (cumulative earned vs paid), recent sessions |
 | **Sessions** | Filter, sort, paginate, edit/delete rows |
 | **Payments** | Add/edit/delete payments; running total column |
-| **Monthly** | Per salary month breakdown + **Download Excel** |
+| **Monthly** | Per salary month breakdown + **Download Excel** + **Download PDF invoice** per cycle |
 | **Sync** | Date range + **Sync now**; auth status; last 10 sync logs |
 | **Settings** | Structured editor for `config.json` |
+| **Alerts** | Configure overdue payment email alerts (threshold days, enable/disable, test send) |
 
 ---
 
@@ -199,8 +237,12 @@ Sheets: **Summary**, **Monthly Breakdown**, **Session Log**, **Payment Log**.
 | GET | `/api/reports/summary` | Dashboard totals |
 | GET | `/api/reports/monthly` | Monthly breakdown array |
 | GET | `/api/reports/export` | Excel file stream |
+| GET | `/api/reports/invoice?month=` | PDF invoice for a salary month |
 | GET/PUT | `/api/config` | Read/write `config.json` |
 | GET | `/api/sync/log` | Last 10 sync rows |
+| GET | `/api/alerts/settings` | Get alert preferences |
+| PUT | `/api/alerts/settings` | Save alert preferences |
+| POST | `/api/alerts/test` | Send a test alert email immediately |
 
 ---
 

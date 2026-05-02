@@ -6,6 +6,7 @@ import { Payments } from './pages/Payments';
 import { Monthly } from './pages/Monthly';
 import { Sync } from './pages/Sync';
 import { Settings } from './pages/Settings';
+import { Alerts } from './pages/Alerts';
 import { Login } from './pages/Login';
 import { Register } from './pages/Register';
 import { isLoggedIn } from './lib/auth';
@@ -34,6 +35,7 @@ export default function App() {
         <Route path="monthly" element={<Monthly />} />
         <Route path="sync" element={<Sync />} />
         <Route path="settings" element={<Settings />} />
+        <Route path="alerts" element={<Alerts />} />
       </Route>
     </Routes>
   );

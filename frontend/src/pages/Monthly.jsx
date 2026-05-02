@@ -4,11 +4,24 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { Button } from '../components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
 import { Skeleton } from '../components/ui/skeleton';
-import { getMonthlyBreakdown, getExportUrl } from '../lib/api';
+import { useState } from 'react';
+import { getMonthlyBreakdown, downloadInvoice, downloadExcel } from '../lib/api';
 import { formatCurrency } from '../lib/utils';
 
 export function Monthly() {
   const { data, isLoading } = useQuery({ queryKey: ['monthly'], queryFn: getMonthlyBreakdown });
+  const [downloading, setDownloading] = useState(null);
+
+  async function handleDownload(salaryMonth) {
+    setDownloading(salaryMonth);
+    try {
+      await downloadInvoice(salaryMonth);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setDownloading(null);
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -23,11 +36,9 @@ export function Monthly() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Salary months</CardTitle>
-            <Button variant="outline" size="sm" asChild>
-              <a href={getExportUrl()} download>
-                <Download className="mr-2 inline h-4 w-4" />
-                Download Excel report
-              </a>
+            <Button variant="outline" size="sm" onClick={() => downloadExcel()}>
+              <Download className="mr-2 h-4 w-4" />
+              Download Excel report
             </Button>
           </CardHeader>
           <CardContent>
@@ -42,6 +53,7 @@ export function Monthly() {
                   <TableHead>Cum. earned</TableHead>
                   <TableHead>Cum. paid</TableHead>
                   <TableHead>Running balance</TableHead>
+                  <TableHead />
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -56,6 +68,16 @@ export function Monthly() {
                     <TableCell>{formatCurrency(m.cumulativePaid)}</TableCell>
                     <TableCell className={m.runningBalance > 0 ? 'font-semibold text-rose-600' : ''}>
                       {formatCurrency(m.runningBalance)}
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        disabled={downloading === m.salaryMonth}
+                        onClick={() => handleDownload(m.salaryMonth)}
+                      >
+                        <Download className="h-3.5 w-3.5" />
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}

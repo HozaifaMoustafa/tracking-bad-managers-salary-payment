@@ -141,6 +141,22 @@ export async function saveConfig(cfg) {
   return data;
 }
 
+// Alerts
+export async function getAlertSettings() {
+  const { data } = await api.get('/alerts/settings');
+  return data;
+}
+
+export async function saveAlertSettings(body) {
+  const { data } = await api.put('/alerts/settings', body);
+  return data;
+}
+
+export async function sendTestAlert() {
+  const { data } = await api.post('/alerts/test');
+  return data;
+}
+
 // Admin
 export async function resetData({ scope = 'all' } = {}) {
   const { data } = await api.post('/admin/reset', { confirm: 'RESET', scope });
@@ -153,4 +169,30 @@ export function getExportUrl(from, to) {
   if (from) q.set('from', from);
   if (to) q.set('to', to);
   return `/api/reports/export?${q.toString()}`;
+}
+
+export async function downloadExcel(from, to) {
+  const params = {};
+  if (from) params.from = from;
+  if (to) params.to = to;
+  const response = await api.get('/reports/export', { params, responseType: 'blob' });
+  const url = URL.createObjectURL(response.data);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `salary_report_${new Date().toISOString().slice(0, 10)}.xlsx`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+export async function downloadInvoice(salaryMonth) {
+  const response = await api.get('/reports/invoice', {
+    params: { month: salaryMonth },
+    responseType: 'blob',
+  });
+  const url = URL.createObjectURL(response.data);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `invoice_${salaryMonth.replace(/\s/g, '_')}.pdf`;
+  a.click();
+  URL.revokeObjectURL(url);
 }

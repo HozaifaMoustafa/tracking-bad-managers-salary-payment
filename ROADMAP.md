@@ -36,15 +36,19 @@
 ### 2a — Payment Accountability
 | Task | Status |
 |---|---|
-| Overdue payment alerts (email via Resend / Nodemailer) | 🔲 Todo |
+| Overdue payment alerts (email via Nodemailer + Gmail SMTP) | ✅ Done |
+| Configurable reminder schedule (threshold days, enable/disable) | ✅ Done |
+| Daily cron job at 9:00 AM with 20-hour cooldown | ✅ Done |
+| `/alerts` settings page in UI (save + send test alert) | ✅ Done |
 | WhatsApp / Telegram reminder bot integration | 🔲 Todo |
-| Configurable reminder schedule (e.g. 3 days after cycle end) | 🔲 Todo |
 | Public payment status page (shareable link for the manager) | 🔲 Todo |
 
 ### 2b — Documents & Evidence
 | Task | Status |
 |---|---|
-| PDF invoice generator (per salary month) | 🔲 Todo |
+| PDF invoice generator (per salary month) | ✅ Done |
+| Invoice includes: header, summary, session table, payment history | ✅ Done |
+| Download invoice button per cycle on Monthly page | ✅ Done |
 | Payment demand letter PDF (professional dispute document) | 🔲 Todo |
 | Evidence export bundle (sessions + payments + balance as a single PDF) | 🔲 Todo |
 

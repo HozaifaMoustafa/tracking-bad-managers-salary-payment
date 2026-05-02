@@ -1,7 +1,7 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, CalendarDays, Wallet, BarChart3,
-  RefreshCw, Settings, Clock, LogOut,
+  RefreshCw, Settings, Clock, LogOut, Bell,
 } from 'lucide-react';
 import { cn, formatCurrency } from '../lib/utils';
 import { clearToken } from '../lib/auth';
@@ -13,6 +13,7 @@ const links = [
   { to: '/monthly', label: 'Monthly', icon: BarChart3 },
   { to: '/sync', label: 'Sync', icon: RefreshCw },
   { to: '/settings', label: 'Settings', icon: Settings },
+  { to: '/alerts', label: 'Alerts', icon: Bell },
 ];
 
 export function Sidebar({ balance }) {
