@@ -14,7 +14,7 @@ router.get('/status', (req, res) => {
 });
 
 router.post('/sync', async (req, res) => {
-  const { from, to } = req.body || {};
+  const { from, to, clientId: reqClientId } = req.body || {};
   if (!from || !to) {
     const err = new Error('from and to (YYYY-MM-DD) are required');
     err.status = 400;
@@ -23,6 +23,22 @@ router.post('/sync', async (req, res) => {
 
   const db = await getDatabase();
   const userId = req.user.id;
+
+  // Resolve target client (explicit clientId or user's default)
+  let client;
+  if (reqClientId) {
+    client = await db.get('SELECT * FROM clients WHERE id = ? AND user_id = ?', [reqClientId, userId]);
+  } else {
+    client = await db.get('SELECT * FROM clients WHERE user_id = ? AND is_default = 1', [userId]);
+  }
+  if (!client) {
+    const err = new Error('No client found to sync to. Create a client first.');
+    err.status = 400;
+    throw err;
+  }
+  let clientConfig = {};
+  try { clientConfig = JSON.parse(client.config_json || '{}'); } catch (_) {}
+
   let fetched = 0;
   let newCount = 0;
   let skipped = 0;
@@ -32,7 +48,7 @@ router.post('/sync', async (req, res) => {
     const events = await fetchCalendarEvents(from, to);
     fetched = events.length;
 
-    const result = await applyRawEventsToDatabase(db, events, userId);
+    const result = await applyRawEventsToDatabase(db, events, userId, client.id, clientConfig);
     newCount = result.newCount;
     skipped = result.skipped;
     result.flaggedTitles.forEach((t) => flaggedTitles.add(t));

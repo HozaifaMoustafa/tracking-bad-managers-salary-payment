@@ -55,9 +55,9 @@
 ### 2c — Multi-Client Support
 | Task | Status |
 |---|---|
-| Multiple employers / clients per user | 🔲 Todo |
-| Per-client earning rules (rates, currency, billing cycle) | 🔲 Todo |
-| Per-client payment tracking and balance | 🔲 Todo |
+| Multiple employers / clients per user | ✅ Done |
+| Per-client earning rules (generic work types: hourly / per_session / milestone) | ✅ Done |
+| Per-client payment tracking and balance | ✅ Done |
 
 ### 2d — UX Improvements
 | Task | Status |

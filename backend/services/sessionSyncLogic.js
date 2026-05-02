@@ -1,14 +1,15 @@
-const { readConfig } = require('./configService');
 const { buildSessionRow } = require('./calculatorService');
 
 /**
  * Insert raw calendar-shaped events into sessions (dedupe by user_id + calendar_event_id).
- * @param {object} db - async DB adapter
+ *
+ * @param {object} db           - async DB adapter
  * @param {Array}  rawEvents
  * @param {number} userId
+ * @param {number} clientId     - which client these sessions belong to
+ * @param {object} clientConfig - parsed config_json from the clients table
  */
-async function applyRawEventsToDatabase(db, rawEvents, userId) {
-  const config = readConfig();
+async function applyRawEventsToDatabase(db, rawEvents, userId, clientId, clientConfig = {}) {
   let newCount = 0;
   let skipped = 0;
   const flaggedTitles = new Set();
@@ -24,16 +25,17 @@ async function applyRawEventsToDatabase(db, rawEvents, userId) {
         continue;
       }
 
-      const row = buildSessionRow(ev, config);
+      const row = buildSessionRow(ev, clientConfig);
 
       const { lastId } = await tx.run(
         `INSERT INTO sessions (
-          user_id, calendar_event_id, title, date, day_of_week, start_time, end_time,
+          user_id, client_id, calendar_event_id, title, date, day_of_week, start_time, end_time,
           duration_hours, category, sub_category, milestone, is_milestone_complete,
           rate_applied, earnings, salary_month, cycle_start, cycle_end, note, flagged
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         [
           userId,
+          clientId,
           row.calendar_event_id,
           row.title,
           row.date,
@@ -58,16 +60,17 @@ async function applyRawEventsToDatabase(db, rawEvents, userId) {
       newCount += 1;
       if (row.flagged) flaggedTitles.add(row.title);
 
-      if (row.category === 'Diploma' && row.is_milestone_complete && row.sub_category && row.milestone) {
+      // Diploma progress tracking (legacy path — sub_category + milestone populated)
+      if (row.sub_category && row.milestone && row.is_milestone_complete) {
         await tx.run(
-          `INSERT INTO diploma_progress (user_id, track, milestone, completed, completion_date, payout_earned, session_id)
-           VALUES (?, ?, ?, 1, ?, ?, ?)
+          `INSERT INTO diploma_progress (user_id, client_id, track, milestone, completed, completion_date, payout_earned, session_id)
+           VALUES (?, ?, ?, ?, 1, ?, ?, ?)
            ON CONFLICT(user_id, track, milestone) DO UPDATE SET
              completed = excluded.completed,
              completion_date = excluded.completion_date,
              payout_earned = excluded.payout_earned,
              session_id = excluded.session_id`,
-          [userId, row.sub_category, row.milestone, row.date, row.earnings, lastId],
+          [userId, clientId, row.sub_category, row.milestone, row.date, row.earnings, lastId],
         );
       }
     }

@@ -4,21 +4,28 @@ const { getAllTimeSummary, getMonthlyBreakdown } = require('./balancerService');
 
 const EGP_FMT = '#,##0.00 "EGP"';
 
-async function buildWorkbook({ from, to, userId } = {}) {
+async function buildWorkbook({ from, to, userId, clientId } = {}) {
   const db = await getDatabase();
-  const summary = await getAllTimeSummary(db, userId);
-  const monthly = await getMonthlyBreakdown(db, userId);
+  const summary = await getAllTimeSummary(db, userId, clientId);
+  const monthly = await getMonthlyBreakdown(db, userId, clientId);
 
-  let sessionSql = 'SELECT * FROM sessions WHERE user_id = ?';
+  const conditions = ['user_id = ?'];
   const params = [userId];
-  if (from) { sessionSql += ' AND date >= ?'; params.push(from); }
-  if (to) { sessionSql += ' AND date <= ?'; params.push(to); }
-  sessionSql += ' ORDER BY date ASC, id ASC';
+  if (clientId) { conditions.push('client_id = ?'); params.push(clientId); }
+  if (from) { conditions.push('date >= ?'); params.push(from); }
+  if (to) { conditions.push('date <= ?'); params.push(to); }
 
-  const sessions = await db.all(sessionSql, params);
+  const sessions = await db.all(
+    `SELECT * FROM sessions WHERE ${conditions.join(' AND ')} ORDER BY date ASC, id ASC`,
+    params,
+  );
+
+  const payConditions = ['user_id = ?'];
+  const payParams = [userId];
+  if (clientId) { payConditions.push('client_id = ?'); payParams.push(clientId); }
   const payments = await db.all(
-    'SELECT * FROM payments WHERE user_id = ? ORDER BY date ASC, id ASC',
-    [userId],
+    `SELECT * FROM payments WHERE ${payConditions.join(' AND ')} ORDER BY date ASC, id ASC`,
+    payParams,
   );
 
   const wb = new ExcelJS.Workbook();

@@ -7,20 +7,21 @@ import { Skeleton } from '../components/ui/skeleton';
 import { useState } from 'react';
 import { getMonthlyBreakdown, downloadInvoice, downloadExcel } from '../lib/api';
 import { formatCurrency } from '../lib/utils';
+import { useClient } from '../context/ClientContext';
 
 export function Monthly() {
-  const { data, isLoading } = useQuery({ queryKey: ['monthly'], queryFn: getMonthlyBreakdown });
+  const { selectedClientId } = useClient();
+  const { data, isLoading } = useQuery({
+    queryKey: ['monthly', selectedClientId],
+    queryFn: () => getMonthlyBreakdown(selectedClientId),
+  });
   const [downloading, setDownloading] = useState(null);
 
   async function handleDownload(salaryMonth) {
     setDownloading(salaryMonth);
-    try {
-      await downloadInvoice(salaryMonth);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setDownloading(null);
-    }
+    try { await downloadInvoice(salaryMonth, selectedClientId); }
+    catch (e) { console.error(e); }
+    finally { setDownloading(null); }
   }
 
   return (
@@ -36,7 +37,7 @@ export function Monthly() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Salary months</CardTitle>
-            <Button variant="outline" size="sm" onClick={() => downloadExcel()}>
+            <Button variant="outline" size="sm" onClick={() => downloadExcel(selectedClientId)}>
               <Download className="mr-2 h-4 w-4" />
               Download Excel report
             </Button>
@@ -70,12 +71,9 @@ export function Monthly() {
                       {formatCurrency(m.runningBalance)}
                     </TableCell>
                     <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="sm"
+                      <Button variant="ghost" size="sm"
                         disabled={downloading === m.salaryMonth}
-                        onClick={() => handleDownload(m.salaryMonth)}
-                      >
+                        onClick={() => handleDownload(m.salaryMonth)}>
                         <Download className="h-3.5 w-3.5" />
                       </Button>
                     </TableCell>

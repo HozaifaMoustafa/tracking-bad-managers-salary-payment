@@ -1,16 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { TrendingUp, Wallet, Scale } from 'lucide-react';
 import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Legend,
-  Line,
-  LineChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
+  Bar, BarChart, CartesianGrid, Legend, Line, LineChart,
+  ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts';
 import { StatCard } from '../components/StatCard';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
@@ -22,41 +14,39 @@ import { Link } from 'react-router-dom';
 import { AlertTriangle } from 'lucide-react';
 import { getMonthlyBreakdown, getSessions, getSummary } from '../lib/api';
 import { formatCurrency, formatDateUi, formatDurationHours } from '../lib/utils';
+import { useClient } from '../context/ClientContext';
 
 export function Dashboard() {
-  const qSummary = useQuery({ queryKey: ['summary'], queryFn: getSummary });
-  const qMonthly = useQuery({ queryKey: ['monthly'], queryFn: getMonthlyBreakdown });
+  const { selectedClientId } = useClient();
+
+  const qSummary = useQuery({
+    queryKey: ['summary', selectedClientId],
+    queryFn: () => getSummary(selectedClientId),
+  });
+  const qMonthly = useQuery({
+    queryKey: ['monthly', selectedClientId],
+    queryFn: () => getMonthlyBreakdown(selectedClientId),
+  });
   const qRecent = useQuery({
-    queryKey: ['sessions', 'recent'],
-    queryFn: () => getSessions({ page: 1, sortBy: 'date', sortDir: 'desc' }),
+    queryKey: ['sessions', 'recent', selectedClientId],
+    queryFn: () => getSessions({ page: 1, sortBy: 'date', sortDir: 'desc', clientId: selectedClientId }),
   });
 
   const s = qSummary.data;
   const monthly = qMonthly.data || [];
   const recent = (qRecent.data?.data || []).slice(0, 10);
 
-  const barData = monthly.map((m) => ({
-    name: m.salaryMonth,
-    earned: m.expectedEarnings,
-  }));
+  const barData = monthly.map((m) => ({ name: m.salaryMonth, earned: m.expectedEarnings }));
+  const lineData = monthly.map((m) => ({ name: m.salaryMonth, earned: m.cumulativeEarned, paid: m.cumulativePaid }));
 
-  const lineData = monthly.map((m) => ({
-    name: m.salaryMonth,
-    earned: m.cumulativeEarned,
-    paid: m.cumulativePaid,
-  }));
-
-  const balanceTone =
-    !s ? 'default' : s.balance > 0 ? 'balance-owed' : s.balance < 0 ? 'overpaid' : 'balance-ok';
+  const balanceTone = !s ? 'default' : s.balance > 0 ? 'balance-owed' : s.balance < 0 ? 'overpaid' : 'balance-ok';
 
   if (qSummary.isLoading) {
     return (
       <div className="space-y-6">
         <Skeleton className="h-10 w-64" />
         <div className="grid gap-4 md:grid-cols-3">
-          <Skeleton className="h-32" />
-          <Skeleton className="h-32" />
-          <Skeleton className="h-32" />
+          <Skeleton className="h-32" /><Skeleton className="h-32" /><Skeleton className="h-32" />
         </div>
       </div>
     );
@@ -70,37 +60,21 @@ export function Dashboard() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
-        <StatCard
-          title="Total Earned"
-          value={formatCurrency(s.totalEarned)}
-          subtitle={`${s.totalSessions} sessions · ${formatDurationHours(s.totalHours)}`}
-          icon={TrendingUp}
-          tone="earned"
-        />
-        <StatCard
-          title="Total Received"
-          value={formatCurrency(s.totalPaid)}
-          subtitle="From payment log"
-          icon={Wallet}
-          tone="paid"
-        />
-        <StatCard
-          title="Balance Owed"
-          value={formatCurrency(s.balance)}
+        <StatCard title="Total Earned" value={formatCurrency(s.totalEarned)}
+          subtitle={`${s.totalSessions} sessions · ${formatDurationHours(s.totalHours)}`} icon={TrendingUp} tone="earned" />
+        <StatCard title="Total Received" value={formatCurrency(s.totalPaid)}
+          subtitle="From payment log" icon={Wallet} tone="paid" />
+        <StatCard title="Balance Owed" value={formatCurrency(s.balance)}
           subtitle={s.balance > 0 ? 'You are owed this amount' : s.balance < 0 ? 'Overpaid vs earned' : 'Balanced'}
-          icon={Scale}
-          tone={balanceTone}
-        />
+          icon={Scale} tone={balanceTone} />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
-          <CardHeader>
-            <CardTitle>Monthly expected earnings</CardTitle>
-          </CardHeader>
+          <CardHeader><CardTitle>Monthly expected earnings</CardTitle></CardHeader>
           <CardContent className="h-72">
             {barData.length === 0 ? (
-              <p className="text-sm text-slate-500">No session data yet. Sync your calendar.</p>
+              <p className="text-sm text-slate-500">No session data yet.</p>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={barData}>
@@ -116,9 +90,7 @@ export function Dashboard() {
         </Card>
 
         <Card>
-          <CardHeader>
-            <CardTitle>Cumulative earned vs paid</CardTitle>
-          </CardHeader>
+          <CardHeader><CardTitle>Cumulative earned vs paid</CardTitle></CardHeader>
           <CardContent className="h-72">
             {lineData.length === 0 ? (
               <p className="text-sm text-slate-500">No data for chart.</p>
@@ -142,9 +114,7 @@ export function Dashboard() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Recent sessions</CardTitle>
-          <Button variant="outline" size="sm" asChild>
-            <Link to="/sessions">View all</Link>
-          </Button>
+          <Button variant="outline" size="sm" asChild><Link to="/sessions">View all</Link></Button>
         </CardHeader>
         <CardContent>
           {recent.length === 0 ? (
@@ -167,7 +137,7 @@ export function Dashboard() {
                     <TableCell className="max-w-[200px] truncate">{row.title}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1">
-                        {row.flagged && <AlertTriangle className="h-4 w-4 text-amber-500" title="Flagged — review title" />}
+                        {row.flagged && <AlertTriangle className="h-4 w-4 text-amber-500" title="Flagged" />}
                         <Badge variant="muted">{row.category}</Badge>
                       </div>
                     </TableCell>

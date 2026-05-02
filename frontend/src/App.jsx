@@ -7,8 +7,10 @@ import { Monthly } from './pages/Monthly';
 import { Sync } from './pages/Sync';
 import { Settings } from './pages/Settings';
 import { Alerts } from './pages/Alerts';
+import { Clients } from './pages/Clients';
 import { Login } from './pages/Login';
 import { Register } from './pages/Register';
+import { ClientProvider } from './context/ClientContext';
 import { isLoggedIn } from './lib/auth';
 
 function ProtectedRoute({ children }) {
@@ -25,7 +27,9 @@ export default function App() {
         path="/"
         element={
           <ProtectedRoute>
-            <Layout />
+            <ClientProvider>
+              <Layout />
+            </ClientProvider>
           </ProtectedRoute>
         }
       >
@@ -36,6 +40,7 @@ export default function App() {
         <Route path="sync" element={<Sync />} />
         <Route path="settings" element={<Settings />} />
         <Route path="alerts" element={<Alerts />} />
+        <Route path="clients" element={<Clients />} />
       </Route>
     </Routes>
   );

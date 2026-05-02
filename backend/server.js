@@ -20,6 +20,7 @@ const configRouter = require('./routes/config');
 const importRouter = require('./routes/import');
 const adminRouter = require('./routes/admin');
 const alertsRouter = require('./routes/alerts');
+const clientsRouter = require('./routes/clients');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -44,6 +45,7 @@ app.use('/api/config', requireAuth, configRouter);
 app.use('/api/import', requireAuth, importRouter);
 app.use('/api/admin', requireAuth, adminRouter);
 app.use('/api/alerts', requireAuth, alertsRouter);
+app.use('/api/clients', requireAuth, clientsRouter);
 
 app.use(errorHandler);
 
