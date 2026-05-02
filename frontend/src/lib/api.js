@@ -189,6 +189,18 @@ export async function downloadExcel(clientId, from, to) {
   URL.revokeObjectURL(url);
 }
 
+export async function downloadDemandLetter(clientId) {
+  const params = {};
+  if (clientId) params.clientId = clientId;
+  const response = await api.get('/reports/demand-letter', { params, responseType: 'blob' });
+  const url = URL.createObjectURL(response.data);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `demand_letter_${new Date().toISOString().slice(0, 10)}.pdf`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 export async function downloadInvoice(salaryMonth, clientId) {
   const params = { month: salaryMonth };
   if (clientId) params.clientId = clientId;

@@ -3,6 +3,7 @@ const { getDatabase } = require('../db/database');
 const { getAllTimeSummary, getMonthlyBreakdown } = require('../services/balancerService');
 const { buildWorkbook } = require('../services/reportService');
 const { buildInvoicePdf } = require('../services/invoiceService');
+const { buildDemandLetterPdf } = require('../services/demandLetterService');
 
 const router = express.Router();
 
@@ -42,6 +43,15 @@ router.get('/invoice', async (req, res) => {
   const clientId = parseClientId(req.query);
   const pdf = await buildInvoicePdf({ userId: req.user.id, salaryMonth: month, clientId });
   const name = `invoice_${month.replace(/\s/g, '_')}.pdf`;
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `attachment; filename="${name}"`);
+  res.send(pdf);
+});
+
+router.get('/demand-letter', async (req, res) => {
+  const clientId = parseClientId(req.query);
+  const pdf = await buildDemandLetterPdf({ userId: req.user.id, clientId });
+  const name = `demand_letter_${new Date().toISOString().slice(0, 10)}.pdf`;
   res.setHeader('Content-Type', 'application/pdf');
   res.setHeader('Content-Disposition', `attachment; filename="${name}"`);
   res.send(pdf);
