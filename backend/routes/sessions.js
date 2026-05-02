@@ -1,6 +1,5 @@
 const express = require('express');
 const { getDatabase } = require('../db/database');
-const { readConfig } = require('../services/configService');
 const { buildManualRawEvent } = require('../services/calculatorService');
 const { applyRawEventsToDatabase } = require('../services/sessionSyncLogic');
 
@@ -15,6 +14,7 @@ function mapSession(r) {
   if (!r) return null;
   return {
     id: r.id,
+    clientId: r.client_id,
     calendarEventId: r.calendar_event_id,
     title: r.title,
     date: r.date,
@@ -38,6 +38,32 @@ function mapSession(r) {
   };
 }
 
+async function resolveClient(db, userId, clientId) {
+  if (clientId) {
+    const c = await db.get(
+      'SELECT * FROM clients WHERE id = ? AND user_id = ?',
+      [clientId, userId],
+    );
+    if (!c) {
+      const err = new Error('Client not found');
+      err.status = 404;
+      throw err;
+    }
+    return c;
+  }
+  // Fall back to default client
+  const def = await db.get(
+    'SELECT * FROM clients WHERE user_id = ? AND is_default = 1',
+    [userId],
+  );
+  if (!def) {
+    const err = new Error('No default client found. Create a client first.');
+    err.status = 400;
+    throw err;
+  }
+  return def;
+}
+
 router.get('/', async (req, res) => {
   const db = await getDatabase();
   const userId = req.user.id;
@@ -48,12 +74,13 @@ router.get('/', async (req, res) => {
   const conditions = ['user_id = ?'];
   const params = [userId];
 
-  if (req.query.from) { conditions.push('date >= ?'); params.push(req.query.from); }
-  if (req.query.to) { conditions.push('date <= ?'); params.push(req.query.to); }
-  if (req.query.category) { conditions.push('category = ?'); params.push(req.query.category); }
+  if (req.query.clientId) { conditions.push('client_id = ?'); params.push(Number(req.query.clientId)); }
+  if (req.query.from)      { conditions.push('date >= ?'); params.push(req.query.from); }
+  if (req.query.to)        { conditions.push('date <= ?'); params.push(req.query.to); }
+  if (req.query.category)  { conditions.push('category = ?'); params.push(req.query.category); }
   if (req.query.salaryMonth) { conditions.push('salary_month = ?'); params.push(req.query.salaryMonth); }
   if (req.query.flagged === '1' || req.query.flagged === 'true') { conditions.push('flagged = 1'); }
-  if (req.query.search) { conditions.push('title LIKE ?'); params.push(`%${req.query.search}%`); }
+  if (req.query.search)    { conditions.push('title LIKE ?'); params.push(`%${req.query.search}%`); }
 
   let sortBy = req.query.sortBy || 'date';
   if (!SORTABLE.has(sortBy)) sortBy = 'date';
@@ -87,13 +114,20 @@ router.get('/', async (req, res) => {
 });
 
 router.post('/', async (req, res) => {
-  const config = readConfig();
-  const raw = buildManualRawEvent(req.body || {}, config);
   const db = await getDatabase();
-  await applyRawEventsToDatabase(db, [raw], req.user.id);
+  const userId = req.user.id;
+  const clientId = req.body.clientId ? Number(req.body.clientId) : null;
+
+  const client = await resolveClient(db, userId, clientId);
+  let clientConfig = {};
+  try { clientConfig = JSON.parse(client.config_json || '{}'); } catch (_) {}
+
+  const raw = buildManualRawEvent(req.body || {}, clientConfig);
+  await applyRawEventsToDatabase(db, [raw], userId, client.id, clientConfig);
+
   const row = await db.get(
     'SELECT * FROM sessions WHERE calendar_event_id = ? AND user_id = ?',
-    [raw.calendarEventId, req.user.id],
+    [raw.calendarEventId, userId],
   );
   if (!row) {
     const err = new Error('Failed to create session');
@@ -115,10 +149,10 @@ router.put('/:id', async (req, res) => {
 
   const body = req.body || {};
   const pairs = [];
-  if (body.earnings !== undefined) pairs.push(['earnings', Number(body.earnings)]);
-  if (body.note !== undefined) pairs.push(['note', String(body.note)]);
-  if (body.flagged !== undefined) pairs.push(['flagged', body.flagged ? 1 : 0]);
-  if (body.category !== undefined) pairs.push(['category', String(body.category)]);
+  if (body.earnings !== undefined)    pairs.push(['earnings', Number(body.earnings)]);
+  if (body.note !== undefined)        pairs.push(['note', String(body.note)]);
+  if (body.flagged !== undefined)     pairs.push(['flagged', body.flagged ? 1 : 0]);
+  if (body.category !== undefined)    pairs.push(['category', String(body.category)]);
   if (body.rateApplied !== undefined) pairs.push(['rate_applied', Number(body.rateApplied)]);
 
   if (!pairs.length) return res.json(mapSession(row));

@@ -6,14 +6,12 @@ const api = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
-// Attach JWT to every request
 api.interceptors.request.use((config) => {
   const token = getToken();
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
 
-// Redirect to login on 401
 api.interceptors.response.use(
   (r) => r,
   (err) => {
@@ -30,25 +28,49 @@ export async function login(email, password) {
   const { data } = await api.post('/auth/login', { email, password });
   return data;
 }
-
 export async function register(email, password, name) {
   const { data } = await api.post('/auth/register', { email, password, name });
   return data;
 }
-
 export async function getMe() {
   const { data } = await api.get('/auth/me');
   return data;
 }
 
-// Reports
-export async function getSummary() {
-  const { data } = await api.get('/reports/summary');
+// Clients
+export async function getClients() {
+  const { data } = await api.get('/clients');
+  return data;
+}
+export async function getClient(id) {
+  const { data } = await api.get(`/clients/${id}`);
+  return data;
+}
+export async function createClient(body) {
+  const { data } = await api.post('/clients', body);
+  return data;
+}
+export async function updateClient(id, body) {
+  const { data } = await api.put(`/clients/${id}`, body);
+  return data;
+}
+export async function deleteClient(id) {
+  await api.delete(`/clients/${id}`);
+}
+export async function setDefaultClient(id) {
+  const { data } = await api.post(`/clients/${id}/default`);
   return data;
 }
 
-export async function getMonthlyBreakdown() {
-  const { data } = await api.get('/reports/monthly');
+// Reports
+export async function getSummary(clientId) {
+  const params = clientId ? { clientId } : {};
+  const { data } = await api.get('/reports/summary', { params });
+  return data;
+}
+export async function getMonthlyBreakdown(clientId) {
+  const params = clientId ? { clientId } : {};
+  const { data } = await api.get('/reports/monthly', { params });
   return data;
 }
 
@@ -57,37 +79,32 @@ export async function getSessions(params) {
   const { data } = await api.get('/sessions', { params });
   return data;
 }
-
 export async function createSession(body) {
   const { data } = await api.post('/sessions', body);
   return data;
 }
-
 export async function updateSession(id, body) {
   const { data } = await api.put(`/sessions/${id}`, body);
   return data;
 }
-
 export async function deleteSession(id) {
   await api.delete(`/sessions/${id}`);
 }
 
 // Payments
-export async function getPayments() {
-  const { data } = await api.get('/payments');
+export async function getPayments(clientId) {
+  const params = clientId ? { clientId } : {};
+  const { data } = await api.get('/payments', { params });
   return data;
 }
-
 export async function createPayment(body) {
   const { data } = await api.post('/payments', body);
   return data;
 }
-
 export async function updatePayment(id, body) {
   const { data } = await api.put(`/payments/${id}`, body);
   return data;
 }
-
 export async function deletePayment(id) {
   await api.delete(`/payments/${id}`);
 }
@@ -97,12 +114,10 @@ export async function syncCalendar(body) {
   const { data } = await api.post('/calendar/sync', body);
   return data;
 }
-
 export async function getCalendarStatus() {
   const { data } = await api.get('/calendar/status');
   return data;
 }
-
 export async function getSyncLog() {
   const { data } = await api.get('/sync/log');
   return data;
@@ -121,7 +136,6 @@ export async function importIcsFile(file, { from, to } = {}) {
   });
   return data;
 }
-
 export async function importIcsPaste(ics, { from, to } = {}) {
   const payload = { ics };
   if (from) payload.from = from;
@@ -135,7 +149,6 @@ export async function getConfig() {
   const { data } = await api.get('/config');
   return data;
 }
-
 export async function saveConfig(cfg) {
   const { data } = await api.put('/config', cfg);
   return data;
@@ -146,12 +159,10 @@ export async function getAlertSettings() {
   const { data } = await api.get('/alerts/settings');
   return data;
 }
-
 export async function saveAlertSettings(body) {
   const { data } = await api.put('/alerts/settings', body);
   return data;
 }
-
 export async function sendTestAlert() {
   const { data } = await api.post('/alerts/test');
   return data;
@@ -163,16 +174,10 @@ export async function resetData({ scope = 'all' } = {}) {
   return data;
 }
 
-// Export URL helper (browser download)
-export function getExportUrl(from, to) {
-  const q = new URLSearchParams();
-  if (from) q.set('from', from);
-  if (to) q.set('to', to);
-  return `/api/reports/export?${q.toString()}`;
-}
-
-export async function downloadExcel(from, to) {
+// Export helpers
+export async function downloadExcel(clientId, from, to) {
   const params = {};
+  if (clientId) params.clientId = clientId;
   if (from) params.from = from;
   if (to) params.to = to;
   const response = await api.get('/reports/export', { params, responseType: 'blob' });
@@ -184,11 +189,22 @@ export async function downloadExcel(from, to) {
   URL.revokeObjectURL(url);
 }
 
-export async function downloadInvoice(salaryMonth) {
-  const response = await api.get('/reports/invoice', {
-    params: { month: salaryMonth },
-    responseType: 'blob',
-  });
+export async function downloadDemandLetter(clientId) {
+  const params = {};
+  if (clientId) params.clientId = clientId;
+  const response = await api.get('/reports/demand-letter', { params, responseType: 'blob' });
+  const url = URL.createObjectURL(response.data);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `demand_letter_${new Date().toISOString().slice(0, 10)}.pdf`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+export async function downloadInvoice(salaryMonth, clientId) {
+  const params = { month: salaryMonth };
+  if (clientId) params.clientId = clientId;
+  const response = await api.get('/reports/invoice', { params, responseType: 'blob' });
   const url = URL.createObjectURL(response.data);
   const a = document.createElement('a');
   a.href = url;

@@ -3,9 +3,15 @@ import { useQuery } from '@tanstack/react-query';
 import { Sidebar } from './Sidebar';
 import { getSummary } from '../lib/api';
 import { Toaster } from 'sonner';
+import { useClient } from '../context/ClientContext';
 
 export function Layout() {
-  const { data } = useQuery({ queryKey: ['summary'], queryFn: getSummary, staleTime: 30_000 });
+  const { selectedClientId } = useClient();
+  const { data } = useQuery({
+    queryKey: ['summary', selectedClientId],
+    queryFn: () => getSummary(selectedClientId),
+    staleTime: 30_000,
+  });
   const balance = data?.balance ?? 0;
 
   return (

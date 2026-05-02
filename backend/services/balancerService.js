@@ -1,15 +1,18 @@
 const { parse, format } = require('date-fns');
 const { enUS } = require('date-fns/locale');
-const { readConfig } = require('./configService');
 const { getCycleRange } = require('./calculatorService');
 
-async function getAllTimeSummary(db, userId) {
+async function getAllTimeSummary(db, userId, clientId) {
+  const clientFilter = clientId ? ' AND client_id = ?' : '';
+  const sessParams = clientId ? [userId, clientId] : [userId];
+  const payParams  = clientId ? [userId, clientId] : [userId];
+
   const [earnedRow, paidRow, countRow, hoursRow, flaggedRow, lastSyncRow] = await Promise.all([
-    db.get('SELECT COALESCE(SUM(earnings), 0) AS s FROM sessions WHERE user_id = ?', [userId]),
-    db.get('SELECT COALESCE(SUM(amount_egp), 0) AS s FROM payments WHERE user_id = ?', [userId]),
-    db.get('SELECT COUNT(*) AS c FROM sessions WHERE user_id = ?', [userId]),
-    db.get('SELECT COALESCE(SUM(duration_hours), 0) AS s FROM sessions WHERE user_id = ?', [userId]),
-    db.get('SELECT COUNT(*) AS c FROM sessions WHERE user_id = ? AND flagged = 1', [userId]),
+    db.get(`SELECT COALESCE(SUM(earnings), 0) AS s FROM sessions WHERE user_id = ?${clientFilter}`, sessParams),
+    db.get(`SELECT COALESCE(SUM(amount_egp), 0) AS s FROM payments WHERE user_id = ?${clientFilter}`, payParams),
+    db.get(`SELECT COUNT(*) AS c FROM sessions WHERE user_id = ?${clientFilter}`, sessParams),
+    db.get(`SELECT COALESCE(SUM(duration_hours), 0) AS s FROM sessions WHERE user_id = ?${clientFilter}`, sessParams),
+    db.get(`SELECT COUNT(*) AS c FROM sessions WHERE user_id = ?${clientFilter} AND flagged = 1`, sessParams),
     db.get(
       `SELECT synced_at FROM sync_log WHERE user_id = ? AND status = 'success' ORDER BY id DESC LIMIT 1`,
       [userId],
@@ -17,7 +20,7 @@ async function getAllTimeSummary(db, userId) {
   ]);
 
   const totalEarned = Math.round(Number(earnedRow.s) * 100) / 100;
-  const totalPaid = Math.round(Number(paidRow.s) * 100) / 100;
+  const totalPaid   = Math.round(Number(paidRow.s) * 100) / 100;
   return {
     totalEarned,
     totalPaid,
@@ -34,13 +37,20 @@ function monthSortKey(label, startDay) {
   return parse(end, 'yyyy-MM-dd', new Date()).getTime();
 }
 
-async function getMonthlyBreakdown(db, userId) {
-  const config = readConfig();
-  const startDay = Number(config.work_cycle_start_day) || 25;
+async function getMonthlyBreakdown(db, userId, clientId) {
+  // Determine work_cycle_start_day: prefer per-client, fall back to 25
+  let startDay = 25;
+  if (clientId) {
+    const client = await db.get('SELECT work_cycle_start_day FROM clients WHERE id = ? AND user_id = ?', [clientId, userId]);
+    if (client) startDay = Number(client.work_cycle_start_day) || 25;
+  }
+
+  const clientFilter = clientId ? ' AND client_id = ?' : '';
+  const baseParams = clientId ? [userId, clientId] : [userId];
 
   const monthRows = await db.all(
-    `SELECT salary_month AS sm FROM sessions WHERE user_id = ? AND salary_month IS NOT NULL GROUP BY salary_month`,
-    [userId],
+    `SELECT salary_month AS sm FROM sessions WHERE user_id = ?${clientFilter} AND salary_month IS NOT NULL GROUP BY salary_month`,
+    baseParams,
   );
 
   const unique = [...new Set(monthRows.map((r) => r.sm))].sort(
@@ -48,8 +58,8 @@ async function getMonthlyBreakdown(db, userId) {
   );
 
   const payments = await db.all(
-    'SELECT date, amount_egp FROM payments WHERE user_id = ? ORDER BY date ASC',
-    [userId],
+    `SELECT date, amount_egp FROM payments WHERE user_id = ?${clientFilter} ORDER BY date ASC`,
+    baseParams,
   );
 
   const rows = [];
@@ -58,12 +68,12 @@ async function getMonthlyBreakdown(db, userId) {
   for (const salaryMonth of unique) {
     const agg = await db.get(
       `SELECT COUNT(*) AS c, COALESCE(SUM(duration_hours),0) AS h, COALESCE(SUM(earnings),0) AS e
-       FROM sessions WHERE user_id = ? AND salary_month = ?`,
-      [userId, salaryMonth],
+       FROM sessions WHERE user_id = ?${clientFilter} AND salary_month = ?`,
+      [...baseParams, salaryMonth],
     );
 
     const expected = Math.round(Number(agg.e) * 100) / 100;
-    const hours = Math.round(Number(agg.h) * 100) / 100;
+    const hours    = Math.round(Number(agg.h) * 100) / 100;
     cumEarned = Math.round((cumEarned + expected) * 100) / 100;
 
     const { start, end } = getCycleRange(salaryMonth, startDay);

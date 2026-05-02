@@ -12,11 +12,20 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/
 import { Skeleton } from '../components/ui/skeleton';
 import { getPayments, createPayment, updatePayment, deletePayment, getSummary } from '../lib/api';
 import { formatCurrency, formatDateUi } from '../lib/utils';
+import { useClient } from '../context/ClientContext';
 
 export function Payments() {
   const qc = useQueryClient();
-  const { data: summary } = useQuery({ queryKey: ['summary'], queryFn: getSummary });
-  const { data: payments, isLoading } = useQuery({ queryKey: ['payments'], queryFn: getPayments });
+  const { selectedClientId } = useClient();
+
+  const { data: summary } = useQuery({
+    queryKey: ['summary', selectedClientId],
+    queryFn: () => getSummary(selectedClientId),
+  });
+  const { data: payments, isLoading } = useQuery({
+    queryKey: ['payments', selectedClientId],
+    queryFn: () => getPayments(selectedClientId),
+  });
 
   const [date, setDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [amount, setAmount] = useState('');
@@ -29,46 +38,31 @@ export function Payments() {
     const asc = [...sorted].sort((a, b) => a.date.localeCompare(b.date) || a.id - b.id);
     let run = 0;
     const map = new Map();
-    for (const p of asc) {
-      run += Number(p.amountEgp);
-      map.set(p.id, run);
-    }
+    for (const p of asc) { run += Number(p.amountEgp); map.set(p.id, run); }
     return sorted.map((p) => ({ ...p, running: map.get(p.id) }));
   }, [sorted]);
 
+  function invalidate() {
+    qc.invalidateQueries({ queryKey: ['payments', selectedClientId] });
+    qc.invalidateQueries({ queryKey: ['summary', selectedClientId] });
+    qc.invalidateQueries({ queryKey: ['monthly', selectedClientId] });
+  }
+
   const mutAdd = useMutation({
-    mutationFn: () => createPayment({ date, amountEgp: Number(amount), note }),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['payments'] });
-      qc.invalidateQueries({ queryKey: ['summary'] });
-      qc.invalidateQueries({ queryKey: ['monthly'] });
-      toast.success('Payment added');
-      setAmount('');
-      setNote('');
-    },
+    mutationFn: () => createPayment({ date, amountEgp: Number(amount), note, clientId: selectedClientId }),
+    onSuccess: () => { invalidate(); toast.success('Payment added'); setAmount(''); setNote(''); },
     onError: (e) => toast.error(e.response?.data?.error || e.message),
   });
 
   const mutUpd = useMutation({
     mutationFn: ({ id, body }) => updatePayment(id, body),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['payments'] });
-      qc.invalidateQueries({ queryKey: ['summary'] });
-      qc.invalidateQueries({ queryKey: ['monthly'] });
-      toast.success('Payment updated');
-      setEdit(null);
-    },
+    onSuccess: () => { invalidate(); toast.success('Payment updated'); setEdit(null); },
     onError: (e) => toast.error(e.response?.data?.error || e.message),
   });
 
   const mutDel = useMutation({
     mutationFn: deletePayment,
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['payments'] });
-      qc.invalidateQueries({ queryKey: ['summary'] });
-      qc.invalidateQueries({ queryKey: ['monthly'] });
-      toast.success('Payment removed');
-    },
+    onSuccess: () => { invalidate(); toast.success('Payment removed'); },
     onError: (e) => toast.error(e.response?.data?.error || e.message),
   });
 
@@ -87,15 +81,13 @@ export function Payments() {
       </Card>
 
       <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Add payment</CardTitle>
-        </CardHeader>
+        <CardHeader><CardTitle className="text-base">Add payment</CardTitle></CardHeader>
         <CardContent className="flex flex-wrap items-end gap-4">
           <div className="min-w-[200px]">
             <DateField label="Date received" value={date} onChange={setDate} />
           </div>
           <div>
-            <Label>Amount (EGP)</Label>
+            <Label>Amount</Label>
             <Input type="number" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0" />
           </div>
           <div className="min-w-[200px] flex-1">
@@ -134,14 +126,8 @@ export function Payments() {
                       <Button variant="ghost" size="icon" onClick={() => setEdit(p)}>
                         <Pencil className="h-4 w-4" />
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="text-rose-600"
-                        onClick={() => {
-                          if (confirm('Delete payment?')) mutDel.mutate(p.id);
-                        }}
-                      >
+                      <Button variant="ghost" size="icon" className="text-rose-600"
+                        onClick={() => { if (confirm('Delete payment?')) mutDel.mutate(p.id); }}>
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </TableCell>
@@ -156,9 +142,7 @@ export function Payments() {
 
       <Dialog open={!!edit} onOpenChange={() => setEdit(null)}>
         <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit payment</DialogTitle>
-          </DialogHeader>
+          <DialogHeader><DialogTitle>Edit payment</DialogTitle></DialogHeader>
           {edit && (
             <PaymentEditForm
               payment={edit}
@@ -192,9 +176,7 @@ function PaymentEditForm({ payment, onSave, onCancel }) {
       </div>
       <div className="flex gap-2">
         <Button onClick={() => onSave({ date, amountEgp: Number(amountEgp), note })}>Save</Button>
-        <Button variant="outline" onClick={onCancel}>
-          Cancel
-        </Button>
+        <Button variant="outline" onClick={onCancel}>Cancel</Button>
       </div>
     </div>
   );

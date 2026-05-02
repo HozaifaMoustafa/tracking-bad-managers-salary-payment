@@ -1,25 +1,44 @@
 import { useQuery } from '@tanstack/react-query';
-import { Download } from 'lucide-react';
+import { Download, FileWarning } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
 import { Skeleton } from '../components/ui/skeleton';
 import { useState } from 'react';
-import { getMonthlyBreakdown, downloadInvoice, downloadExcel } from '../lib/api';
+import { getMonthlyBreakdown, downloadInvoice, downloadExcel, downloadDemandLetter } from '../lib/api';
 import { formatCurrency } from '../lib/utils';
+import { useClient } from '../context/ClientContext';
+import { toast } from 'sonner';
 
 export function Monthly() {
-  const { data, isLoading } = useQuery({ queryKey: ['monthly'], queryFn: getMonthlyBreakdown });
+  const { selectedClientId } = useClient();
+  const { data, isLoading } = useQuery({
+    queryKey: ['monthly', selectedClientId],
+    queryFn: () => getMonthlyBreakdown(selectedClientId),
+  });
   const [downloading, setDownloading] = useState(null);
+  const [demandLoading, setDemandLoading] = useState(false);
 
-  async function handleDownload(salaryMonth) {
+  const overdueCount = (data || []).filter((m) => m.runningBalance > 0).length;
+
+  async function handleDownloadInvoice(salaryMonth) {
     setDownloading(salaryMonth);
+    try { await downloadInvoice(salaryMonth, selectedClientId); }
+    catch (e) { console.error(e); }
+    finally { setDownloading(null); }
+  }
+
+  async function handleDemandLetter() {
+    setDemandLoading(true);
     try {
-      await downloadInvoice(salaryMonth);
+      await downloadDemandLetter(selectedClientId);
     } catch (e) {
-      console.error(e);
+      const msg = e.response?.data
+        ? await e.response.data.text().catch(() => e.message)
+        : e.message;
+      toast.error(msg.includes('No overdue') ? 'No overdue cycles — nothing to dispute.' : 'Failed to generate demand letter.');
     } finally {
-      setDownloading(null);
+      setDemandLoading(false);
     }
   }
 
@@ -34,12 +53,25 @@ export function Monthly() {
         <Skeleton className="h-96 w-full" />
       ) : (
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
+          <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-2">
             <CardTitle>Salary months</CardTitle>
-            <Button variant="outline" size="sm" onClick={() => downloadExcel()}>
-              <Download className="mr-2 h-4 w-4" />
-              Download Excel report
-            </Button>
+            <div className="flex flex-wrap gap-2">
+              {overdueCount > 0 && (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  disabled={demandLoading}
+                  onClick={handleDemandLetter}
+                >
+                  <FileWarning className="mr-2 h-4 w-4" />
+                  {demandLoading ? 'Generating…' : `Demand Letter (${overdueCount} overdue)`}
+                </Button>
+              )}
+              <Button variant="outline" size="sm" onClick={() => downloadExcel(selectedClientId)}>
+                <Download className="mr-2 h-4 w-4" />
+                Excel report
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             <Table>
@@ -58,7 +90,10 @@ export function Monthly() {
               </TableHeader>
               <TableBody>
                 {(data || []).map((m) => (
-                  <TableRow key={m.salaryMonth}>
+                  <TableRow
+                    key={m.salaryMonth}
+                    className={m.runningBalance > 0 ? 'border-l-4 border-l-rose-400 bg-rose-50/30' : ''}
+                  >
                     <TableCell className="font-medium">{m.salaryMonth}</TableCell>
                     <TableCell className="text-xs text-slate-600">{m.cyclePeriod}</TableCell>
                     <TableCell>{m.sessionsCount}</TableCell>
@@ -74,7 +109,8 @@ export function Monthly() {
                         variant="ghost"
                         size="sm"
                         disabled={downloading === m.salaryMonth}
-                        onClick={() => handleDownload(m.salaryMonth)}
+                        onClick={() => handleDownloadInvoice(m.salaryMonth)}
+                        title="Download invoice"
                       >
                         <Download className="h-3.5 w-3.5" />
                       </Button>

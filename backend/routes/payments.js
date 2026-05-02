@@ -4,30 +4,58 @@ const { getDatabase } = require('../db/database');
 const router = express.Router();
 
 function mapPayment(r) {
-  return { id: r.id, date: r.date, amountEgp: r.amount_egp, note: r.note, createdAt: r.created_at };
+  return {
+    id: r.id,
+    clientId: r.client_id,
+    date: r.date,
+    amountEgp: r.amount_egp,
+    note: r.note,
+    createdAt: r.created_at,
+  };
+}
+
+async function resolveDefaultClientId(db, userId) {
+  const def = await db.get(
+    'SELECT id FROM clients WHERE user_id = ? AND is_default = 1',
+    [userId],
+  );
+  return def ? def.id : null;
 }
 
 router.get('/', async (req, res) => {
   const db = await getDatabase();
+  const conditions = ['user_id = ?'];
+  const params = [req.user.id];
+
+  if (req.query.clientId) {
+    conditions.push('client_id = ?');
+    params.push(Number(req.query.clientId));
+  }
+
   const rows = await db.all(
-    'SELECT * FROM payments WHERE user_id = ? ORDER BY date DESC, id DESC',
-    [req.user.id],
+    `SELECT * FROM payments WHERE ${conditions.join(' AND ')} ORDER BY date DESC, id DESC`,
+    params,
   );
   res.json(rows.map(mapPayment));
 });
 
 router.post('/', async (req, res) => {
-  const { date, amount_egp, amountEgp, note } = req.body || {};
+  const { date, amount_egp, amountEgp, note, clientId } = req.body || {};
   const amt = amount_egp ?? amountEgp;
   if (!date || amt == null) {
     const err = new Error('date and amount_egp (or amountEgp) are required');
     err.status = 400;
     throw err;
   }
+
   const db = await getDatabase();
+  const resolvedClientId = clientId
+    ? Number(clientId)
+    : await resolveDefaultClientId(db, req.user.id);
+
   const { lastId } = await db.run(
-    'INSERT INTO payments (user_id, date, amount_egp, note) VALUES (?, ?, ?, ?)',
-    [req.user.id, date, Number(amt), note || ''],
+    'INSERT INTO payments (user_id, client_id, date, amount_egp, note) VALUES (?, ?, ?, ?, ?)',
+    [req.user.id, resolvedClientId, date, Number(amt), note || ''],
   );
   const row = await db.get('SELECT * FROM payments WHERE id = ?', [lastId]);
   res.status(201).json(mapPayment(row));

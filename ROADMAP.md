@@ -49,15 +49,15 @@
 | PDF invoice generator (per salary month) | ✅ Done |
 | Invoice includes: header, summary, session table, payment history | ✅ Done |
 | Download invoice button per cycle on Monthly page | ✅ Done |
-| Payment demand letter PDF (professional dispute document) | 🔲 Todo |
-| Evidence export bundle (sessions + payments + balance as a single PDF) | 🔲 Todo |
+| Payment demand letter PDF (professional dispute document) | ✅ Done |
+| Evidence export bundle (sessions + payments + balance as a single PDF) | ⏭ Skipped — demand letter already contains full session evidence log |
 
 ### 2c — Multi-Client Support
 | Task | Status |
 |---|---|
-| Multiple employers / clients per user | 🔲 Todo |
-| Per-client earning rules (rates, currency, billing cycle) | 🔲 Todo |
-| Per-client payment tracking and balance | 🔲 Todo |
+| Multiple employers / clients per user | ✅ Done |
+| Per-client earning rules (generic work types: hourly / per_session / milestone) | ✅ Done |
+| Per-client payment tracking and balance | ✅ Done |
 
 ### 2d — UX Improvements
 | Task | Status |

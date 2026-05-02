@@ -1,21 +1,11 @@
-/**
- * Classifies calendar titles and computes per-session earnings + salary cycle fields.
- * Mirrors the Python CLI rules: groups, private courses (fixed on COMPLETE), diplomas.
- */
 const { randomUUID } = require('crypto');
-const {
-  format,
-  parse,
-  addMonths,
-  addDays,
-} = require('date-fns');
+const { format, parse, addMonths, addDays } = require('date-fns');
 const { enUS } = require('date-fns/locale');
 const { formatInTimeZone } = require('date-fns-tz');
 const { DateTime } = require('luxon');
 
-/**
- * Salary month label e.g. "December 2024" from a calendar date string YYYY-MM-DD.
- */
+// ─── Cycle helpers ───────────────────────────────────────────────────────────
+
 function getSalaryMonth(dateStr, startDay = 25) {
   const d = parse(dateStr, 'yyyy-MM-dd', new Date());
   if (d.getDate() >= startDay) {
@@ -25,9 +15,6 @@ function getSalaryMonth(dateStr, startDay = 25) {
   return format(d, 'MMMM yyyy', { locale: enUS });
 }
 
-/**
- * Cycle bounds for a salary month label (inclusive).
- */
 function getCycleRange(salaryMonthLabel, startDay = 25) {
   const endMonthDate = parse(salaryMonthLabel, 'MMMM yyyy', new Date(), { locale: enUS });
   const y = endMonthDate.getFullYear();
@@ -39,6 +26,50 @@ function getCycleRange(salaryMonthLabel, startDay = 25) {
     end: format(end, 'yyyy-MM-dd'),
   };
 }
+
+// ─── Generic work-type logic ──────────────────────────────────────────────────
+
+/**
+ * Find the best-matching work type from the client's work_types array.
+ * Exact name match wins; falls back to case-insensitive contains.
+ */
+function matchWorkType(title, workTypes = []) {
+  if (!workTypes.length) return null;
+  const lower = String(title || '').toLowerCase();
+  for (const wt of workTypes) {
+    if (wt.name.toLowerCase() === lower) return wt;
+  }
+  for (const wt of workTypes) {
+    if (lower.includes(wt.name.toLowerCase())) return wt;
+  }
+  return null;
+}
+
+/**
+ * Detect if a title signals a completed milestone ("COMPLETE" / "DONE" suffix).
+ */
+function titleIsComplete(title) {
+  const last = String(title || '').trim().split(' - ').pop().toUpperCase();
+  return last === 'COMPLETE' || last === 'DONE';
+}
+
+/**
+ * Calculate earnings from a matched work type.
+ *   hourly      → rate × durationHours
+ *   per_session → flat rate
+ *   milestone   → rate only when isComplete, else 0
+ */
+function calcEarnings(durationHours, workType, isComplete = false) {
+  if (!workType) return 0;
+  switch (workType.rate_type) {
+    case 'hourly':      return Math.round(durationHours * (workType.rate || 0) * 100) / 100;
+    case 'per_session': return workType.rate || 0;
+    case 'milestone':   return isComplete ? (workType.rate || 0) : 0;
+    default:            return 0;
+  }
+}
+
+// ─── Legacy helpers (kept for backward-compat title parsing) ─────────────────
 
 function classifyTitle(title) {
   const t = String(title || '').trim();
@@ -60,12 +91,7 @@ function classifyTitle(title) {
     } else if (parts.length === 1) {
       track = parts[0];
     }
-    return {
-      category: 'Diploma',
-      subCategory: track,
-      milestone,
-      isMilestoneComplete: complete,
-    };
+    return { category: 'Diploma', subCategory: track, milestone, isMilestoneComplete: complete };
   }
 
   if (lower.includes('private course:')) {
@@ -74,32 +100,27 @@ function classifyTitle(title) {
     const last = parts[parts.length - 1] || '';
     const complete = ['COMPLETE', 'DONE'].includes(last.toUpperCase());
     let courseKey = '';
-    if (complete && parts.length > 1) {
-      courseKey = parts.slice(0, -1).join(' - ');
-    } else {
-      courseKey = parts[0] || rest;
+    if (complete && parts.length > 1) courseKey = parts.slice(0, -1).join(' - ');
+    else courseKey = parts[0] || rest;
+    return { category: 'Private Course', subCategory: courseKey, milestone: null, isMilestoneComplete: complete };
+  }
+
+  if (lower.includes('group a')) return { category: 'Group A', subCategory: null, milestone: null, isMilestoneComplete: false };
+  if (lower.includes('group b')) return { category: 'Group B', subCategory: null, milestone: null, isMilestoneComplete: false };
+
+  return { category: 'Uncategorized', subCategory: null, milestone: null, isMilestoneComplete: false };
+}
+
+function findDiplomaPayout(config, track, milestone) {
+  const diplomas = config.diplomas || {};
+  for (const [tName, tData] of Object.entries(diplomas)) {
+    if (tName.trim().toLowerCase() !== String(track).trim().toLowerCase()) continue;
+    const ms = (tData && tData.milestones) || {};
+    for (const [mName, amount] of Object.entries(ms)) {
+      if (mName.trim().toLowerCase() === String(milestone).trim().toLowerCase()) return Number(amount);
     }
-    return {
-      category: 'Private Course',
-      subCategory: courseKey,
-      milestone: null,
-      isMilestoneComplete: complete,
-    };
   }
-
-  if (lower.includes('group a')) {
-    return { category: 'Group A', subCategory: null, milestone: null, isMilestoneComplete: false };
-  }
-  if (lower.includes('group b')) {
-    return { category: 'Group B', subCategory: null, milestone: null, isMilestoneComplete: false };
-  }
-
-  return {
-    category: 'Uncategorized',
-    subCategory: null,
-    milestone: null,
-    isMilestoneComplete: false,
-  };
+  return null;
 }
 
 function findPrivateOverride(overrides, courseKey, fullTitle) {
@@ -116,40 +137,93 @@ function findPrivateOverride(overrides, courseKey, fullTitle) {
   return null;
 }
 
-function findDiplomaPayout(config, track, milestone) {
-  const diplomas = config.diplomas || {};
-  for (const [tName, tData] of Object.entries(diplomas)) {
-    if (tName.trim().toLowerCase() !== String(track).trim().toLowerCase()) continue;
-    const ms = (tData && tData.milestones) || {};
-    for (const [mName, amount] of Object.entries(ms)) {
-      if (mName.trim().toLowerCase() === String(milestone).trim().toLowerCase()) {
-        return Number(amount);
-      }
-    }
-  }
-  return null;
-}
+// ─── Core session builder ─────────────────────────────────────────────────────
 
 /**
- * Build a row object ready for SQLite insert (snake_case keys matching columns).
+ * Build a session row ready for DB insert.
+ *
+ * clientConfig shape:
+ *   { work_cycle_start_day, timezone, currency, work_types: [{name, rate_type, rate, color}] }
+ *
+ * When work_types is populated the new generic logic runs.
+ * When empty / absent, falls back to legacy classifyTitle + config.groups / diplomas / private_courses.
  */
-function buildSessionRow(rawEvent, config) {
-  const startDay = Number(config.work_cycle_start_day) || 25;
+function buildSessionRow(rawEvent, clientConfig = {}) {
+  const startDay = Number(clientConfig.work_cycle_start_day) || 25;
   const title = rawEvent.title;
   const dateStr = rawEvent.date;
   const durationHours = Math.round(Number(rawEvent.durationHours) * 100) / 100;
+  const workTypes = clientConfig.work_types || [];
 
-  const classified = classifyTitle(title);
   const salaryMonth = getSalaryMonth(dateStr, startDay);
   const { start: cycleStart, end: cycleEnd } = getCycleRange(salaryMonth, startDay);
 
+  // ── New generic path ────────────────────────────────────────────────────────
+  if (workTypes.length > 0) {
+    const matched = matchWorkType(title, workTypes);
+    const isComplete = titleIsComplete(title);
+
+    if (!matched) {
+      return {
+        calendar_event_id: rawEvent.calendarEventId,
+        title,
+        date: dateStr,
+        day_of_week: rawEvent.dayOfWeek,
+        start_time: rawEvent.startTime,
+        end_time: rawEvent.endTime,
+        duration_hours: durationHours,
+        category: 'Uncategorized',
+        sub_category: null,
+        milestone: null,
+        is_milestone_complete: 0,
+        rate_applied: 0,
+        earnings: 0,
+        salary_month: salaryMonth,
+        cycle_start: cycleStart,
+        cycle_end: cycleEnd,
+        note: 'No matching work type — review and edit manually',
+        flagged: 1,
+      };
+    }
+
+    const earnings = calcEarnings(durationHours, matched, isComplete);
+    const rateApplied = matched.rate_type === 'hourly' ? (matched.rate || 0) : 0;
+    let note = '';
+    if (matched.rate_type === 'milestone' && !isComplete) {
+      note = `${matched.name} — payout on completion`;
+    }
+
+    return {
+      calendar_event_id: rawEvent.calendarEventId,
+      title,
+      date: dateStr,
+      day_of_week: rawEvent.dayOfWeek,
+      start_time: rawEvent.startTime,
+      end_time: rawEvent.endTime,
+      duration_hours: durationHours,
+      category: matched.name,
+      sub_category: null,
+      milestone: matched.rate_type === 'milestone' ? title : null,
+      is_milestone_complete: isComplete ? 1 : 0,
+      rate_applied: rateApplied,
+      earnings,
+      salary_month: salaryMonth,
+      cycle_start: cycleStart,
+      cycle_end: cycleEnd,
+      note,
+      flagged: 0,
+    };
+  }
+
+  // ── Legacy path (no work_types configured) ──────────────────────────────────
+  const classified = classifyTitle(title);
   let rateApplied = 0;
   let earnings = 0;
   let note = '';
   let flagged = classified.category === 'Uncategorized';
 
-  const groups = config.groups || {};
-  const pc = config.private_courses || {};
+  const groups = clientConfig.groups || {};
+  const pc = clientConfig.private_courses || {};
   const split = Number(pc.default_split_instructor) || 0.5;
   const defaultHr = Number(pc.default_hourly_rate) || 300;
   const overrides = pc.overrides || {};
@@ -175,13 +249,12 @@ function buildSessionRow(rawEvent, config) {
       note = 'Fixed course — payout on COMPLETE event only';
     } else {
       rateApplied = defaultHr;
-      const totalSession = durationHours * defaultHr;
-      earnings = Math.round(totalSession * split * 100) / 100;
+      earnings = Math.round(durationHours * defaultHr * split * 100) / 100;
       note = `Split ${Math.round(split * 100)}% of ${defaultHr} EGP/hr assumed total`;
     }
   } else if (classified.category === 'Diploma') {
     if (classified.isMilestoneComplete) {
-      const payout = findDiplomaPayout(config, classified.subCategory, classified.milestone);
+      const payout = findDiplomaPayout(clientConfig, classified.subCategory, classified.milestone);
       if (payout != null) {
         earnings = payout;
         note = `Milestone payout: ${classified.milestone}`;
@@ -216,20 +289,19 @@ function buildSessionRow(rawEvent, config) {
   };
 }
 
-/**
- * Build a raw event object for a user-entered session (no Google / ICS).
- * Uses fixed local start time 09:00 in config timezone for date + duration.
- */
-function buildManualRawEvent({ date, title, durationHours }, config) {
-  const tz = config.timezone || 'Africa/Cairo';
+// ─── Manual session builder ───────────────────────────────────────────────────
+
+function buildManualRawEvent({ date, title, durationHours, workTypeName, isComplete, note }, clientConfig = {}) {
+  const tz = clientConfig.timezone || 'Africa/Cairo';
   const dur = Number(durationHours);
   if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(String(date))) {
     const err = new Error('date must be YYYY-MM-DD');
     err.status = 400;
     throw err;
   }
-  if (!String(title || '').trim()) {
-    const err = new Error('title is required');
+  const resolvedTitle = String(workTypeName || title || '').trim();
+  if (!resolvedTitle) {
+    const err = new Error('title or workTypeName is required');
     err.status = 400;
     throw err;
   }
@@ -237,6 +309,14 @@ function buildManualRawEvent({ date, title, durationHours }, config) {
     const err = new Error('durationHours must be a positive number up to 168');
     err.status = 400;
     throw err;
+  }
+
+  // Append COMPLETE suffix for milestone types so the row is built correctly
+  const workTypes = clientConfig.work_types || [];
+  const matched = matchWorkType(resolvedTitle, workTypes);
+  let finalTitle = resolvedTitle;
+  if (matched && matched.rate_type === 'milestone' && isComplete) {
+    finalTitle = `${resolvedTitle} - COMPLETE`;
   }
 
   const start = DateTime.fromISO(`${date}T09:00:00`, { zone: tz });
@@ -251,8 +331,9 @@ function buildManualRawEvent({ date, title, durationHours }, config) {
 
   return {
     calendarEventId: `manual-${randomUUID()}`,
-    title: String(title).trim(),
+    title: finalTitle,
     date: String(date),
+    manualNote: note ? String(note).trim() : null,
     dayOfWeek: formatInTimeZone(startJs, tz, 'EEEE', { locale: enUS }),
     startTime: startJs.toISOString(),
     endTime: endJs.toISOString(),
@@ -264,7 +345,9 @@ module.exports = {
   getSalaryMonth,
   getCycleRange,
   classifyTitle,
+  matchWorkType,
+  calcEarnings,
   buildSessionRow,
-  findDiplomaPayout,
   buildManualRawEvent,
+  findDiplomaPayout,
 };
