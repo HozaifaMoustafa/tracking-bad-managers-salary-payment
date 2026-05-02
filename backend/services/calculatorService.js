@@ -291,7 +291,7 @@ function buildSessionRow(rawEvent, clientConfig = {}) {
 
 // ─── Manual session builder ───────────────────────────────────────────────────
 
-function buildManualRawEvent({ date, title, durationHours, workTypeName, isComplete }, clientConfig = {}) {
+function buildManualRawEvent({ date, title, durationHours, workTypeName, isComplete, note }, clientConfig = {}) {
   const tz = clientConfig.timezone || 'Africa/Cairo';
   const dur = Number(durationHours);
   if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(String(date))) {
@@ -318,9 +318,6 @@ function buildManualRawEvent({ date, title, durationHours, workTypeName, isCompl
   if (matched && matched.rate_type === 'milestone' && isComplete) {
     finalTitle = `${resolvedTitle} - COMPLETE`;
   }
-  if (title && title !== resolvedTitle) {
-    finalTitle = resolvedTitle;
-  }
 
   const start = DateTime.fromISO(`${date}T09:00:00`, { zone: tz });
   if (!start.isValid) {
@@ -336,6 +333,7 @@ function buildManualRawEvent({ date, title, durationHours, workTypeName, isCompl
     calendarEventId: `manual-${randomUUID()}`,
     title: finalTitle,
     date: String(date),
+    manualNote: note ? String(note).trim() : null,
     dayOfWeek: formatInTimeZone(startJs, tz, 'EEEE', { locale: enUS }),
     startTime: startJs.toISOString(),
     endTime: endJs.toISOString(),

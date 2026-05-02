@@ -50,7 +50,7 @@
 | Invoice includes: header, summary, session table, payment history | ✅ Done |
 | Download invoice button per cycle on Monthly page | ✅ Done |
 | Payment demand letter PDF (professional dispute document) | ✅ Done |
-| Evidence export bundle (sessions + payments + balance as a single PDF) | 🔲 Todo |
+| Evidence export bundle (sessions + payments + balance as a single PDF) | ⏭ Skipped — demand letter already contains full session evidence log |
 
 ### 2c — Multi-Client Support
 | Task | Status |

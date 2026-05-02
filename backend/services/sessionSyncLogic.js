@@ -52,7 +52,7 @@ async function applyRawEventsToDatabase(db, rawEvents, userId, clientId, clientC
           row.salary_month,
           row.cycle_start,
           row.cycle_end,
-          row.note,
+          ev.manualNote || row.note,
           row.flagged,
         ],
       );

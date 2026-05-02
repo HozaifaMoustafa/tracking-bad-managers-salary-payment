@@ -188,13 +188,14 @@ async function buildDemandLetterPdf({ userId, clientId }) {
     y, SW, { bold: true, bg: '#f1f5f9', fontSize: 8 });
   y += 18;
 
-  for (const s of sessions) {
+  for (let i = 0; i < sessions.length; i++) {
+    const s = sessions[i];
     if (y > doc.page.height - 60) { doc.addPage(); y = 50; }
     tableRow(
       doc,
       [s.date, s.title, s.category, s.day_of_week || '', s.duration_hours.toFixed(2),
        fmt(s.rate_applied, currency), fmt(s.earnings, currency)],
-      y, SW, { bg: sessions.indexOf(s) % 2 === 1 ? '#f8fafc' : null, fontSize: 8 },
+      y, SW, { bg: i % 2 === 1 ? '#f8fafc' : null, fontSize: 8 },
     );
     y += 15;
   }

@@ -312,8 +312,9 @@ export function Sessions() {
               disabled={mutCreate.isPending || (!addForm.workTypeName && !addForm.title)}
               onClick={() => mutCreate.mutate({
                 date: addForm.date,
-                title: addForm.title || addForm.workTypeName,
+                title: addForm.workTypeName || addForm.title,
                 workTypeName: addForm.workTypeName || undefined,
+                note: workTypes.length > 0 && addForm.title ? addForm.title : undefined,
                 durationHours: Number(addForm.durationHours),
                 isComplete: addForm.isComplete,
                 clientId: selectedClientId,
