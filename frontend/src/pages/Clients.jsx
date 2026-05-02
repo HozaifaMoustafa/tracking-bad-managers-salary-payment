@@ -8,7 +8,6 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../components/ui/dialog';
 import { Skeleton } from '../components/ui/skeleton';
-import { Separator } from '../components/ui/separator';
 import { getClients, createClient, updateClient, deleteClient, setDefaultClient } from '../lib/api';
 import { useClient } from '../context/ClientContext';
 
@@ -143,7 +142,7 @@ function ClientForm({ initial, onSave, onCancel, saving }) {
             <Label>Timezone (IANA)</Label>
             <Input value={timezone} onChange={(e) => setTimezone(e.target.value)} placeholder="Africa/Cairo" />
           </div>
-          <Separator />
+          <div className="border-t border-slate-200" />
           <div>
             <div className="mb-2 text-sm font-medium text-slate-700">Work types</div>
             <p className="mb-3 text-xs text-slate-500">
