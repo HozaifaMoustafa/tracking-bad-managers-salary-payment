@@ -23,10 +23,12 @@ router.get('/status', async (req, res) => {
 });
 
 // POST /api/billing/checkout — create a LemonSqueezy checkout URL
+// Body: { billingCycle: 'monthly' | 'annual' }
 router.post('/checkout', async (req, res) => {
+  const billingCycle = req.body?.billingCycle === 'annual' ? 'annual' : 'monthly';
   const db = await getDatabase();
   const user = await db.get('SELECT id, email, name FROM users WHERE id = ?', [req.user.id]);
-  const url = await createCheckout({ userId: user.id, email: user.email, name: user.name });
+  const url = await createCheckout({ userId: user.id, email: user.email, name: user.name, billingCycle });
   res.json({ url });
 });
 

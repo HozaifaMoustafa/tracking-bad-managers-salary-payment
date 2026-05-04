@@ -24,10 +24,15 @@ async function lsRequest(method, path, body) {
   return res.json();
 }
 
-async function createCheckout({ userId, email, name }) {
+async function createCheckout({ userId, email, name, billingCycle = 'monthly' }) {
   const storeId = process.env.LEMONSQUEEZY_STORE_ID;
-  const variantId = process.env.LEMONSQUEEZY_VARIANT_ID;
   const appUrl = process.env.APP_URL || 'http://localhost:5173';
+
+  // Resolve variant: prefer cycle-specific var, fall back to generic LEMONSQUEEZY_VARIANT_ID
+  const variantId =
+    billingCycle === 'annual'
+      ? (process.env.LEMONSQUEEZY_VARIANT_ID_ANNUAL || process.env.LEMONSQUEEZY_VARIANT_ID)
+      : (process.env.LEMONSQUEEZY_VARIANT_ID_MONTHLY || process.env.LEMONSQUEEZY_VARIANT_ID);
 
   if (!storeId || !variantId || !process.env.LEMONSQUEEZY_API_KEY) {
     const err = new Error('LemonSqueezy is not configured on this server.');

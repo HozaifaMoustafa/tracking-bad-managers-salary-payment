@@ -179,8 +179,8 @@ export async function getBillingStatus() {
   const { data } = await api.get('/billing/status');
   return data;
 }
-export async function createCheckout() {
-  const { data } = await api.post('/billing/checkout');
+export async function createCheckout(billingCycle = 'monthly') {
+  const { data } = await api.post('/billing/checkout', { billingCycle });
   return data;
 }
 export async function createBillingPortal() {
