@@ -174,6 +174,20 @@ export async function resetData({ scope = 'all' } = {}) {
   return data;
 }
 
+// Billing
+export async function getBillingStatus() {
+  const { data } = await api.get('/billing/status');
+  return data;
+}
+export async function createCheckout() {
+  const { data } = await api.post('/billing/checkout');
+  return data;
+}
+export async function createBillingPortal() {
+  const { data } = await api.post('/billing/portal');
+  return data;
+}
+
 // Export helpers
 export async function downloadExcel(clientId, from, to) {
   const params = {};

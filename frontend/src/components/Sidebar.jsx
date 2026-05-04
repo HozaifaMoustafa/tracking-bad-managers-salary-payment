@@ -1,12 +1,14 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, CalendarDays, Wallet, BarChart3,
-  RefreshCw, Settings, Clock, LogOut, Bell, Briefcase, ChevronDown,
+  RefreshCw, Settings, Clock, LogOut, Bell, Briefcase, ChevronDown, CreditCard, Zap,
 } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { cn, formatCurrency } from '../lib/utils';
 import { clearToken } from '../lib/auth';
 import { useClient } from '../context/ClientContext';
+import { getBillingStatus } from '../lib/api';
 
 const links = [
   { to: '/',         label: 'Dashboard', icon: LayoutDashboard },
@@ -17,6 +19,7 @@ const links = [
   { to: '/clients',  label: 'Clients',   icon: Briefcase },
   { to: '/settings', label: 'Settings',  icon: Settings },
   { to: '/alerts',   label: 'Alerts',    icon: Bell },
+  { to: '/billing',  label: 'Billing',   icon: CreditCard },
 ];
 
 export function Sidebar({ balance }) {
@@ -24,6 +27,12 @@ export function Sidebar({ balance }) {
   const { clients, selectedClient, setSelectedClientId } = useClient();
   const [dropOpen, setDropOpen] = useState(false);
   const dropRef = useRef(null);
+
+  const { data: billing } = useQuery({
+    queryKey: ['billing'],
+    queryFn: getBillingStatus,
+    staleTime: 5 * 60_000,
+  });
 
   const owed = balance > 0;
   const over = balance < 0;
@@ -111,6 +120,16 @@ export function Sidebar({ balance }) {
       </nav>
 
       <div className="border-t border-slate-800 p-3 space-y-2">
+        {billing && !billing.isPro && (
+          <NavLink
+            to="/billing"
+            className="flex w-full items-center gap-2 rounded-md bg-indigo-600/20 px-3 py-2 text-xs font-medium text-indigo-300 hover:bg-indigo-600/30 transition-colors"
+          >
+            <Zap className="h-3.5 w-3.5 shrink-0" />
+            Upgrade to Pro
+          </NavLink>
+        )}
+
         <div
           className={cn(
             'rounded-lg px-3 py-2 text-center text-xs font-semibold',

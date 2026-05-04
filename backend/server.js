@@ -21,11 +21,16 @@ const importRouter = require('./routes/import');
 const adminRouter = require('./routes/admin');
 const alertsRouter = require('./routes/alerts');
 const clientsRouter = require('./routes/clients');
+const { router: billingRouter, handleWebhook: billingWebhook } = require('./routes/billing');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 
 app.use(cors({ origin: true }));
+
+// Webhook must be registered before express.json() so we can read the raw body for HMAC verification
+app.post('/api/billing/webhook', express.raw({ type: 'application/json' }), billingWebhook);
+
 app.use(express.json({ limit: '15mb' }));
 
 app.get('/api/health', (req, res) => {
@@ -46,6 +51,7 @@ app.use('/api/import', requireAuth, importRouter);
 app.use('/api/admin', requireAuth, adminRouter);
 app.use('/api/alerts', requireAuth, alertsRouter);
 app.use('/api/clients', requireAuth, clientsRouter);
+app.use('/api/billing', requireAuth, billingRouter);
 
 app.use(errorHandler);
 

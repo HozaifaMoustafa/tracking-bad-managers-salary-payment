@@ -39,6 +39,18 @@ router.post('/', async (req, res) => {
     throw err;
   }
   const db = await getDatabase();
+
+  // Plan gate: free users are limited to 1 client
+  const userRow = await db.get('SELECT plan FROM users WHERE id = ?', [req.user.id]);
+  if ((userRow?.plan || 'free') === 'free') {
+    const { c } = await db.get('SELECT COUNT(*) AS c FROM clients WHERE user_id = ?', [req.user.id]);
+    if (Number(c) >= 1) {
+      return res.status(403).json({
+        error: 'Free plan is limited to 1 client. Upgrade to Pro for unlimited clients.',
+        code: 'upgrade_required',
+      });
+    }
+  }
   const configJson = JSON.stringify(config || { work_types: [], timezone: 'UTC' });
   const { lastId } = await db.run(
     `INSERT INTO clients (user_id, name, currency, work_cycle_start_day, config_json, is_default)

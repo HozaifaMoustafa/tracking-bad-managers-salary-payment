@@ -61,11 +61,11 @@ router.post('/login', async (req, res) => {
 router.get('/me', requireAuth, async (req, res) => {
   const db = await getDatabase();
   const user = await db.get(
-    'SELECT id, email, name, created_at FROM users WHERE id = ?',
+    'SELECT id, email, name, plan, created_at FROM users WHERE id = ?',
     [req.user.id],
   );
   if (!user) return res.status(404).json({ error: 'User not found' });
-  res.json(user);
+  res.json({ ...user, plan: user.plan || 'free' });
 });
 
 module.exports = router;
