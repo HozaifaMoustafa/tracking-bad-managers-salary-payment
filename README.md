@@ -13,12 +13,15 @@ A **multi-user SaaS** for instructors and freelancers who want to track unpaid w
 
 | Feature | Free | Pro |
 |---|---|---|
-| Work session tracking (manual + Google Calendar sync) | ✅ | ✅ |
+| Work session tracking (manual entry + ICS import) | ✅ | ✅ |
 | Payment history & running balance | ✅ | ✅ |
 | PDF invoice per salary cycle | ✅ | ✅ |
-| Payment demand letter (formal dispute document + evidence log) | ✅ | ✅ |
-| Overdue payment email alerts (daily cron) | ✅ | ✅ |
 | Number of clients / employers | 1 | Unlimited |
+| Monthly breakdown & reports | ❌ | ✅ |
+| Excel export | ❌ | ✅ |
+| Payment demand letter (formal dispute document + evidence log) | ❌ | ✅ |
+| Overdue payment email alerts (daily cron) | ❌ | ✅ |
+| Google Calendar sync | ❌ | ✅ |
 
 ---
 

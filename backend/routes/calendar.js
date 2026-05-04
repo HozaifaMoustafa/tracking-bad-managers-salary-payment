@@ -3,6 +3,7 @@ const express = require('express');
 const { getDatabase } = require('../db/database');
 const { fetchCalendarEvents, tokenExists, credentialsPath } = require('../services/calendarService');
 const { applyRawEventsToDatabase } = require('../services/sessionSyncLogic');
+const { requirePro } = require('../middleware/requirePro');
 
 const router = express.Router();
 
@@ -13,7 +14,7 @@ router.get('/status', (req, res) => {
   });
 });
 
-router.post('/sync', async (req, res) => {
+router.post('/sync', requirePro, async (req, res) => {
   const { from, to, clientId: reqClientId } = req.body || {};
   if (!from || !to) {
     const err = new Error('from and to (YYYY-MM-DD) are required');

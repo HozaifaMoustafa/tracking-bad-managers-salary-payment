@@ -8,6 +8,7 @@ import { useState } from 'react';
 import { getMonthlyBreakdown, downloadInvoice, downloadExcel, downloadDemandLetter } from '../lib/api';
 import { formatCurrency } from '../lib/utils';
 import { useClient } from '../context/ClientContext';
+import { ProGate } from '../components/ProGate';
 import { toast } from 'sonner';
 
 export function Monthly() {
@@ -49,6 +50,7 @@ export function Monthly() {
         <p className="text-sm text-slate-500">Per salary cycle: expected earnings and running balance vs payments.</p>
       </div>
 
+      <ProGate feature="Monthly breakdown">
       {isLoading ? (
         <Skeleton className="h-96 w-full" />
       ) : (
@@ -125,6 +127,7 @@ export function Monthly() {
           </CardContent>
         </Card>
       )}
+      </ProGate>
     </div>
   );
 }

@@ -10,6 +10,7 @@ import { Badge } from '../components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
 import { syncCalendar, getSyncLog, getCalendarStatus, getConfig, importIcsFile, importIcsPaste } from '../lib/api';
 import { getDefaultSyncRange } from '../lib/utils';
+import { ProGate } from '../components/ProGate';
 
 export function Sync() {
   const qc = useQueryClient();
@@ -94,6 +95,7 @@ export function Sync() {
         </p>
       </div>
 
+      <ProGate feature="Google Calendar sync">
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Google auth status</CardTitle>
@@ -223,6 +225,7 @@ export function Sync() {
           </Button>
         </CardContent>
       </Card>
+      </ProGate>
 
       {lastIcsResult && (
         <Card>

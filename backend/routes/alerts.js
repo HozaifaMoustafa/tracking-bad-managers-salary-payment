@@ -1,8 +1,11 @@
 const express = require('express');
 const { getDatabase } = require('../db/database');
 const { sendTestEmail } = require('../services/emailService');
+const { requirePro } = require('../middleware/requirePro');
 
 const router = express.Router();
+
+router.use(requirePro);
 
 // GET /api/alerts/settings
 router.get('/settings', async (req, res) => {

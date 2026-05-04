@@ -4,6 +4,7 @@ const { getAllTimeSummary, getMonthlyBreakdown } = require('../services/balancer
 const { buildWorkbook } = require('../services/reportService');
 const { buildInvoicePdf } = require('../services/invoiceService');
 const { buildDemandLetterPdf } = require('../services/demandLetterService');
+const { requirePro } = require('../middleware/requirePro');
 
 const router = express.Router();
 
@@ -20,13 +21,13 @@ router.get('/summary', async (req, res) => {
   res.json(await getAllTimeSummary(db, req.user.id, clientId));
 });
 
-router.get('/monthly', async (req, res) => {
+router.get('/monthly', requirePro, async (req, res) => {
   const db = await getDatabase();
   const clientId = parseClientId(req.query);
   res.json(await getMonthlyBreakdown(db, req.user.id, clientId));
 });
 
-router.get('/export', async (req, res) => {
+router.get('/export', requirePro, async (req, res) => {
   const { from, to } = req.query;
   const clientId = parseClientId(req.query);
   const wb = await buildWorkbook({ from, to, userId: req.user.id, clientId });
@@ -48,7 +49,7 @@ router.get('/invoice', async (req, res) => {
   res.send(pdf);
 });
 
-router.get('/demand-letter', async (req, res) => {
+router.get('/demand-letter', requirePro, async (req, res) => {
   const clientId = parseClientId(req.query);
   const pdf = await buildDemandLetterPdf({ userId: req.user.id, clientId });
   const name = `demand_letter_${new Date().toISOString().slice(0, 10)}.pdf`;

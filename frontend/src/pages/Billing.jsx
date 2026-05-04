@@ -9,13 +9,16 @@ import { Skeleton } from '../components/ui/skeleton';
 import { getBillingStatus, createCheckout, createBillingPortal } from '../lib/api';
 
 const FEATURES = [
-  { label: 'Work session tracking',        free: true,       pro: true },
-  { label: 'Payment history',              free: true,       pro: true },
-  { label: 'PDF invoices per cycle',        free: true,       pro: true },
-  { label: 'Payment demand letters (PDF)',  free: true,       pro: true },
-  { label: 'Overdue email alerts',          free: true,       pro: true },
-  { label: 'Google Calendar sync',          free: true,       pro: true },
+  { label: 'Work session tracking',         free: true,       pro: true },
+  { label: 'Payment history & balance',     free: true,       pro: true },
+  { label: 'PDF invoice per salary cycle',  free: true,       pro: true },
+  { label: 'ICS calendar import',           free: true,       pro: true },
   { label: 'Number of clients/employers',   free: '1 client', pro: 'Unlimited' },
+  { label: 'Monthly breakdown & reports',   free: false,      pro: true },
+  { label: 'Excel export',                  free: false,      pro: true },
+  { label: 'Payment demand letter (PDF)',   free: false,      pro: true },
+  { label: 'Overdue email alerts',          free: false,      pro: true },
+  { label: 'Google Calendar sync',          free: false,      pro: true },
 ];
 
 function Check() {

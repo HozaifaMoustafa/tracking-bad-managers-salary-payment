@@ -10,6 +10,7 @@ import { Separator } from '../components/ui/separator';
 import { Skeleton } from '../components/ui/skeleton';
 import { Badge } from '../components/ui/badge';
 import { getAlertSettings, saveAlertSettings, sendTestAlert } from '../lib/api';
+import { ProGate } from '../components/ProGate';
 
 function formatDate(iso) {
   if (!iso) return null;
@@ -63,6 +64,8 @@ export function Alerts() {
           Get an email when your salary is overdue by more than a set number of days.
         </p>
       </div>
+
+      <ProGate feature="Email alerts">
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
@@ -169,6 +172,7 @@ export function Alerts() {
         <p>You'll receive at most one alert per 20 hours to avoid spam.</p>
         <p className="pt-1">SMTP must be configured in the server's <code>.env</code> file for emails to send.</p>
       </div>
+      </ProGate>
     </div>
   );
 }
