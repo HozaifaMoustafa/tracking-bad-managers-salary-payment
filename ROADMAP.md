@@ -76,15 +76,21 @@
 ### Pricing tiers
 | Tier | Features | Price |
 |---|---|---|
-| **Free** | 1 client, basic tracking, Excel export | $0 |
-| **Pro** | Unlimited clients, PDF invoices, payment alerts, WhatsApp reminders | ~$9/mo |
+| **Free** | 1 client, basic tracking, PDF invoices, demand letters, email alerts | $0 |
+| **Pro** | Unlimited clients + everything above | ~$9/mo |
 | **Team** | Manager view, multiple instructors under one organization | ~$29/mo |
+
+> **Payment processor:** [LemonSqueezy](https://lemonsqueezy.com) — chosen over Stripe because Stripe does not natively support Egypt. LemonSqueezy acts as Merchant of Record, handles VAT globally, and pays out without requiring a US/UK entity.
 
 ### Tasks
 | Task | Status |
 |---|---|
-| Stripe integration (subscription billing) | 🔲 Todo |
-| Feature gating by plan (free vs pro vs team) | 🔲 Todo |
+| LemonSqueezy subscription billing | ✅ Done |
+| Feature gating by plan — free limited to 1 client, Pro = unlimited | ✅ Done |
+| `/billing` page — plan status, upgrade CTA, feature comparison table | ✅ Done |
+| Webhook handler — subscription_created / updated / cancelled / expired | ✅ Done |
+| "Upgrade to Pro" CTA in Sidebar + upgrade dialog in /clients | ✅ Done |
+| Configure LS env vars + webhook URL in production | 🔲 Todo (deploy step) |
 | Team / organization model (many instructors, one manager view) | 🔲 Todo |
 | Usage analytics dashboard (admin) | 🔲 Todo |
 | Landing page & marketing site | 🔲 Todo |

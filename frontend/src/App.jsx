@@ -8,6 +8,7 @@ import { Sync } from './pages/Sync';
 import { Settings } from './pages/Settings';
 import { Alerts } from './pages/Alerts';
 import { Clients } from './pages/Clients';
+import { Billing } from './pages/Billing';
 import { Login } from './pages/Login';
 import { Register } from './pages/Register';
 import { ClientProvider } from './context/ClientContext';
@@ -41,6 +42,7 @@ export default function App() {
         <Route path="settings" element={<Settings />} />
         <Route path="alerts" element={<Alerts />} />
         <Route path="clients" element={<Clients />} />
+        <Route path="billing" element={<Billing />} />
       </Route>
     </Routes>
   );

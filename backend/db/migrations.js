@@ -148,6 +148,17 @@ async function runMigrations(db) {
     )
   `);
 
+  // Add billing columns to users table (idempotent)
+  const userAlterations = [
+    "ALTER TABLE users ADD COLUMN plan TEXT DEFAULT 'free'",
+    'ALTER TABLE users ADD COLUMN ls_customer_id TEXT',
+    'ALTER TABLE users ADD COLUMN ls_subscription_id TEXT',
+    'ALTER TABLE users ADD COLUMN ls_subscription_status TEXT',
+  ];
+  for (const sql of userAlterations) {
+    try { await db.exec(sql); } catch (_) { /* already exists */ }
+  }
+
   // Add client_id columns to existing tables if they don't exist yet (idempotent)
   const alterations = [
     'ALTER TABLE sessions ADD COLUMN client_id INTEGER',

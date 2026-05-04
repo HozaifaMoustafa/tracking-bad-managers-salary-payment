@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { Plus, Trash2, Pencil, Star, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, Trash2, Pencil, Star, ChevronDown, ChevronUp, Zap } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -163,6 +164,7 @@ function ClientForm({ initial, onSave, onCancel, saving }) {
 
 export function Clients() {
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const { setSelectedClientId } = useClient();
 
   const { data: clients = [], isLoading } = useQuery({ queryKey: ['clients'], queryFn: getClients });
@@ -170,13 +172,21 @@ export function Clients() {
   const [editClient, setEditClient] = useState(null);
   const [addOpen, setAddOpen] = useState(false);
   const [expandedId, setExpandedId] = useState(null);
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
 
   function invalidate() { qc.invalidateQueries({ queryKey: ['clients'] }); }
 
   const mutCreate = useMutation({
     mutationFn: createClient,
     onSuccess: (c) => { invalidate(); toast.success('Client created'); setAddOpen(false); setSelectedClientId(c.id); },
-    onError: (e) => toast.error(e.response?.data?.error || e.message),
+    onError: (e) => {
+      if (e.response?.status === 403 && e.response?.data?.code === 'upgrade_required') {
+        setAddOpen(false);
+        setUpgradeOpen(true);
+      } else {
+        toast.error(e.response?.data?.error || e.message);
+      }
+    },
   });
 
   const mutUpdate = useMutation({
@@ -316,6 +326,34 @@ export function Clients() {
               saving={mutUpdate.isPending}
             />
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Upgrade prompt */}
+      <Dialog open={upgradeOpen} onOpenChange={setUpgradeOpen}>
+        <DialogContent className="max-w-sm text-center">
+          <DialogHeader>
+            <DialogTitle className="flex items-center justify-center gap-2">
+              <Zap className="h-5 w-5 text-indigo-500" /> Upgrade to Pro
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <p className="text-sm text-slate-600">
+              The free plan supports <strong>1 client</strong>. Upgrade to Pro
+              for unlimited clients and everything we ship next.
+            </p>
+            <div className="flex flex-col gap-2">
+              <Button
+                className="bg-indigo-600 hover:bg-indigo-700 text-white w-full"
+                onClick={() => { setUpgradeOpen(false); navigate('/billing'); }}
+              >
+                <Zap className="mr-2 h-4 w-4" /> See Pro plan
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => setUpgradeOpen(false)}>
+                Maybe later
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
