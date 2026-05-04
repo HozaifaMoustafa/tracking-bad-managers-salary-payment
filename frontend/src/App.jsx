@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { Layout } from './components/Layout';
+import { Landing } from './pages/Landing';
 import { Dashboard } from './pages/Dashboard';
 import { Sessions } from './pages/Sessions';
 import { Payments } from './pages/Payments';
@@ -18,9 +19,15 @@ function ProtectedRoute({ children }) {
   return isLoggedIn() ? children : <Navigate to="/login" replace />;
 }
 
+// Root: landing page for guests, redirect to dashboard for logged-in users
+function RootPage() {
+  return isLoggedIn() ? <Navigate to="/dashboard" replace /> : <Landing />;
+}
+
 export default function App() {
   return (
     <Routes>
+      <Route path="/" element={<RootPage />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
 
@@ -34,7 +41,7 @@ export default function App() {
           </ProtectedRoute>
         }
       >
-        <Route index element={<Dashboard />} />
+        <Route path="dashboard" element={<Dashboard />} />
         <Route path="sessions" element={<Sessions />} />
         <Route path="payments" element={<Payments />} />
         <Route path="monthly" element={<Monthly />} />

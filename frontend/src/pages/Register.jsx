@@ -19,7 +19,7 @@ export function Register() {
     try {
       const { token } = await register(email, password, name);
       setToken(token);
-      navigate('/');
+      navigate('/dashboard');
     } catch (err) {
       setError(err.response?.data?.error || 'Registration failed');
     } finally {

@@ -11,7 +11,7 @@ import { useClient } from '../context/ClientContext';
 import { getBillingStatus } from '../lib/api';
 
 const links = [
-  { to: '/',         label: 'Dashboard', icon: LayoutDashboard },
+  { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { to: '/sessions', label: 'Sessions',  icon: CalendarDays },
   { to: '/payments', label: 'Payments',  icon: Wallet },
   { to: '/monthly',  label: 'Monthly',   icon: BarChart3 },
@@ -105,7 +105,7 @@ export function Sidebar({ balance }) {
           <NavLink
             key={to}
             to={to}
-            end={to === '/'}
+            end={to === '/dashboard'}
             className={({ isActive }) =>
               cn(
                 'flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors',
