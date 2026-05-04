@@ -1,291 +1,291 @@
-# Hours & Salary Tracker (full stack)
+# Hours & Salary Tracker
 
-A **local-only** web app for one instructor: pull sessions from **Google Calendar**, compute **EGP** earnings from editable rules, log **payments** in **SQLite**, and view balances, charts, and **Excel** export in the browser at **http://localhost:3000**.
+A **multi-user SaaS** for instructors and freelancers who want to track unpaid work and hold managers accountable. Log sessions, calculate what you're owed, record payments, generate invoices and formal demand letters, and get email alerts when salary is overdue.
 
-- **Backend:** Node.js 22.5+, Express, built-in **`node:sqlite`**, `googleapis`, `exceljs`, `pdfkit`, `nodemailer`, `node-cron`, `date-fns`, `dotenv`
-- **Frontend:** React 18, Vite, Tailwind CSS, TanStack Query, React Router, Recharts, Sonner
-- **Data:** `backend/tracker.db` (auto-created), root `config.json` (human-editable)
-
-A legacy **Python CLI** (`main.py`, `src/`) may still exist in this folder; the web app does not use it.
+- **Backend:** Node.js 22+, Express, SQLite (dev) / PostgreSQL (production), `pdfkit`, `nodemailer`, `node-cron`
+- **Frontend:** React 18, Vite, Tailwind CSS, TanStack Query, React Router, Recharts
+- **Billing:** [LemonSqueezy](https://lemonsqueezy.com) — free/pro subscription gating
+- **Deploy:** Render.com (backend + DB) + Vercel (frontend) via `render.yaml`
 
 ---
 
-## What it does (plain English)
+## Features
 
-1. You name calendar events in a consistent way (Group A/B, Private Course, Diploma, etc.).
-2. You **sync** a date range from Google Calendar; each event becomes one **session** row (duplicates skipped by Google event id).
-3. The app calculates **earnings** per session from `config.json`.
-4. You record **payments** when money hits your account.
-5. The **dashboard** shows total earned, total paid, and **what you’re still owed**.
-6. You can **export** the same logic to an Excel workbook.
+| Feature | Free | Pro |
+|---|---|---|
+| Work session tracking (manual + Google Calendar sync) | ✅ | ✅ |
+| Payment history & running balance | ✅ | ✅ |
+| PDF invoice per salary cycle | ✅ | ✅ |
+| Payment demand letter (formal dispute document + evidence log) | ✅ | ✅ |
+| Overdue payment email alerts (daily cron) | ✅ | ✅ |
+| Number of clients / employers | 1 | Unlimited |
 
 ---
 
 ## Prerequisites
 
-- **Node.js 22.5+** (needed for built-in `node:sqlite`; use **22 LTS** if you hit issues on Node 24)
+- **Node.js 22.5+** (required for built-in `node:sqlite`)
 - **npm**
-- Google account and a **Google Cloud** project with **Calendar API** enabled
-- **OAuth client** (Desktop app) → download JSON as `backend/credentials.json`
+- Google account + Google Cloud project with **Calendar API** enabled (optional — only for sync)
 
 ---
 
-## Installation
-
-From the `hours-tracker` directory:
-
-1. **Clean install** (recommended if you previously had `better-sqlite3` or EPERM errors):
-
-   ```bash
-   rmdir /s /q node_modules backend\node_modules frontend\node_modules 2>nul
-   del package-lock.json 2>nul
-   npm install
-   ```
-
-2. Or a normal install:
-
-   ```bash
-   npm install
-   ```
-
-The backend uses **Node’s built-in SQLite** (`node:sqlite`) — **no Visual Studio / Windows SDK / node-gyp** required.
-
-If install still hits **EPERM**, close Cursor/VS Code on that folder, pause OneDrive/antivirus scanning for the project path, or run the terminal **as Administrator** once.
-
-Install all workspaces explicitly:
+## Quick start
 
 ```bash
-npm run install:all
+# Clone and install
+git clone https://github.com/HozaifaDev/tracking-bad-managers-salary-payment
+cd tracking-bad-managers-salary-payment
+npm install
+
+# Configure
+cp .env.example .env
+# Fill in .env (at minimum: JWT_SECRET)
+
+# Run (backend :3001 + frontend :5173)
+npm run dev
 ```
+
+Open **http://localhost:5173**, register an account, and you're in.
 
 ---
 
-## Configuration
+## Configuration — `.env`
 
-### `.env` (repo root)
+| Variable | Required | Description |
+|---|---|---|
+| `PORT` | No | API port (default `3001`) |
+| `NODE_ENV` | No | `development` shows error stacks |
+| `DB_PATH` | No | SQLite file path, relative to `backend/` (default `./tracker.db`) |
+| `DATABASE_URL` | No | PostgreSQL connection string — if set, SQLite is not used |
+| `JWT_SECRET` | **Yes** | Long random string for signing tokens |
+| `SMTP_HOST` | No | SMTP server for email alerts (e.g. `smtp.gmail.com`) |
+| `SMTP_PORT` | No | SMTP port (default `587`) |
+| `SMTP_USER` | No | SMTP login email |
+| `SMTP_PASS` | No | SMTP password or app password |
+| `SMTP_FROM` | No | From address shown in alert emails |
+| `LEMONSQUEEZY_API_KEY` | No | LS API key — from Settings → API |
+| `LEMONSQUEEZY_STORE_ID` | No | LS store ID — from Settings → Stores |
+| `LEMONSQUEEZY_VARIANT_ID` | No | Pro plan variant ID |
+| `LEMONSQUEEZY_WEBHOOK_SECRET` | No | Webhook signing secret from LS dashboard |
+| `APP_URL` | No | Public frontend URL (used for checkout redirect, default `http://localhost:5173`) |
+| `GOOGLE_CALENDAR_ID` | No | Calendar ID for Google sync |
 
-| Variable | Meaning |
-|----------|---------|
-| `PORT` | API port (default **3001**) |
-| `DB_PATH` | SQLite file, relative to **backend/** (default `./tracker.db`) |
-| `CONFIG_PATH` | Path to `config.json`, relative to **backend/** (default `../config.json`) |
-| `NODE_ENV` | `development` shows error stacks in JSON responses |
-| `JWT_SECRET` | Secret for signing tokens — change in production |
-| `SMTP_HOST` | SMTP server (e.g. `smtp.gmail.com`) |
-| `SMTP_PORT` | SMTP port (default `587`) |
-| `SMTP_USER` | SMTP login email |
-| `SMTP_PASS` | SMTP password or app password |
-| `SMTP_FROM` | From address shown in alert emails |
-
-### `config.json` (root)
-
-| Section | Meaning |
-|---------|---------|
-| `timezone` | IANA zone for calendar parsing (e.g. `Africa/Cairo`) |
-| `work_cycle_start_day` | Cycle starts this day each month (default **25**) |
-| `currency` | Display label (e.g. `EGP`) |
-| `groups` | Named groups → `rate_per_hour`, `platform`, `color` |
-| `private_courses` | `default_split_instructor`, `default_hourly_rate`, `overrides` for fixed deals |
-| `diplomas` | Track name → `{ color, milestones: { MilestoneName: payoutEGP } }` |
-
-You can edit in **Settings** in the UI or by hand; the API re-reads the file on each request.
+LemonSqueezy variables are only required if you want paid subscriptions. The app runs fully without them (all users are treated as free).
 
 ---
 
 ## Authentication
 
-The app uses **JWT** authentication. Each user has their own data (sessions, payments, settings).
+Anyone who can reach the URL can register. Each user's data (sessions, payments, clients) is fully isolated. JWTs expire after 7 days.
 
-1. Open the app → click **Register** → create an account with email + password.
-2. Log in — your JWT is stored in `localStorage` and attached to every API request.
-3. Use **Sign out** in the sidebar to log out.
+> In production, restrict registration via network access or add invite-only logic if needed.
 
-> There is no admin-created accounts — anyone who can reach the URL can register. In production, restrict this via network access or add invite-only registration.
+---
+
+## Clients & work types
+
+Each user can have multiple **clients** (employers / projects). Each client has its own:
+- Currency and billing cycle start day
+- **Work types** — define how earnings are calculated:
+  - `hourly` — rate × hours worked
+  - `per_session` — flat amount per session
+  - `milestone` — fixed payout triggered when marked complete
+
+Switch between clients from the sidebar dropdown. All sessions, payments, invoices, and alerts are scoped to the active client.
+
+> **Free plan:** 1 client. **Pro plan:** unlimited clients.
+
+---
+
+## Google Calendar sync
+
+1. [Google Cloud Console](https://console.cloud.google.com/) → enable **Google Calendar API**
+2. Create an **OAuth client (Desktop app)** → download JSON → save as `backend/credentials.json`
+3. Run one-time auth:
+   ```bash
+   cd backend && npm run auth
+   ```
+4. Go to **Sync** in the app and pick a date range.
+
+Re-sync never duplicates sessions — existing `calendar_event_id` rows are skipped. All-day events are ignored.
+
+Sessions are matched to work types by name. Anything unmatched is flagged with 0 earnings for manual review.
 
 ---
 
 ## Email alerts
 
-Set up overdue payment alerts in the **Alerts** page:
-
-1. Add SMTP credentials to `.env` (see table above — Gmail App Passwords work well).
-2. Go to **Alerts** in the sidebar.
-3. Enter your email, set how many days overdue before alerting, and save.
-4. Click **Send test alert** to verify your SMTP config works.
+1. Add SMTP credentials to `.env`
+2. Go to **Alerts** in the sidebar
+3. Enter your email, set the overdue threshold (days), and save
+4. Click **Send test alert** to verify
 
 The server checks every morning at **9:00 AM** and emails you if any salary cycle is unpaid past your threshold.
 
 ---
 
-## PDF invoices
+## PDF documents
 
-On the **Monthly** page, click the download icon on any salary cycle row to get a PDF invoice for that cycle. The invoice includes session breakdown, payments received, and outstanding balance.
-
----
-
-## Google Calendar setup
-
-1. [Google Cloud Console](https://console.cloud.google.com/) → your project.
-2. **APIs & Services → Library** → enable **Google Calendar API**.
-3. **OAuth consent screen** → External (or Internal) → add yourself as test user if needed.
-4. **Credentials → Create credentials → OAuth client ID → Desktop app** → download JSON.
-5. Save as **`hours-tracker/backend/credentials.json`** (never commit it).
-
-### First-time auth (terminal)
-
-Google OAuth needs a one-time browser step:
-
-```bash
-cd backend
-npm run auth
-```
-
-Open the printed URL, approve, paste the **code** into the terminal. This creates **`backend/token.json`** (gitignored).
-
-Then start the app and use **Sync** in the UI.
+| Document | How to get it |
+|---|---|
+| **Invoice** | Monthly page → download icon on any cycle row |
+| **Demand letter** | Monthly page → "Download demand letter" — covers all overdue cycles with full session evidence |
 
 ---
 
-## Calendar event naming
+## Billing cycle
 
-| Title contains | Category | Notes |
-|----------------|----------|--------|
-| `Group A` | Group A | Hourly rate from config |
-| `Group B` | Group B | Hourly rate from config |
-| `Private Course:` | Private Course | Text after `:` is the course key; add ` - COMPLETE` or ` - Done` for fixed payout |
-| `Diploma:` | Diploma | e.g. `Diploma: Data Analysis - Excel`; milestone payout on `… - COMPLETE` / `Done` |
-| Anything else | Uncategorized | **Flagged**, 0 EGP |
+Default: each salary month runs from the **25th** of the previous calendar month through the **24th** of the named month. Configurable per client via **cycle start day**.
 
-**Examples**
-
-- `Group A - Evening`
-- `Private Course: Python Basics`
-- `Private Course: SQL - COMPLETE` (fixed amount from overrides)
-- `Diploma: Data Analysis - Excel - COMPLETE`
-
-All-day events are **not** imported.
+Example: **Nov 25 – Dec 24** = salary month **December**.
 
 ---
 
-## Billing cycle (25th rule)
+## LemonSqueezy billing setup
 
-Default: each **salary month** runs from the **25th** of the previous calendar month through the **24th** of the named month (configurable via `work_cycle_start_day`).
+1. Create a product + variant in your LemonSqueezy dashboard
+2. Set up a webhook pointing to `https://your-domain.com/api/billing/webhook`
+   - Events to subscribe: `subscription_created`, `subscription_updated`, `subscription_cancelled`, `subscription_expired`
+3. Fill in the four `LEMONSQUEEZY_*` vars in `.env`
 
-Example: **Nov 25 – Dec 24** → salary month **December 2024**.
-
----
-
-## Run the app
-
-```bash
-npm run dev
-```
-
-- **Frontend:** http://localhost:3000  
-- **API:** http://localhost:3001  
-- Vite proxies `/api` → the backend.
-
-### Scripts
-
-| Command | Action |
-|---------|--------|
-| `npm run dev` | Backend (nodemon) + frontend (Vite) together |
-| `cd backend && npm run auth` | Google OAuth token setup |
-| `cd backend && npm start` | API only |
+When a user upgrades, LemonSqueezy fires the webhook and the app sets their plan to `pro` immediately.
 
 ---
 
-## Using the UI
+## UI pages
 
 | Page | Purpose |
-|------|---------|
-| **Dashboard** | Totals, bar chart (expected per month), line chart (cumulative earned vs paid), recent sessions |
-| **Sessions** | Filter, sort, paginate, edit/delete rows |
-| **Payments** | Add/edit/delete payments; running total column |
-| **Monthly** | Per salary month breakdown + **Download Excel** + **Download PDF invoice** per cycle |
-| **Sync** | Date range + **Sync now**; auth status; last 10 sync logs |
-| **Settings** | Structured editor for `config.json` |
-| **Alerts** | Configure overdue payment email alerts (threshold days, enable/disable, test send) |
+|---|---|
+| **Dashboard** | Balance, charts (expected vs paid per month, cumulative), recent sessions |
+| **Sessions** | Add, edit, delete, filter, and paginate work sessions |
+| **Payments** | Log payments received; running total column |
+| **Monthly** | Per-cycle breakdown — download invoice or demand letter per cycle |
+| **Sync** | Google Calendar sync with date range and sync log |
+| **Clients** | Add/edit/delete clients; configure work types, currency, cycle day |
+| **Alerts** | Configure overdue email alerts |
+| **Settings** | Danger zone (reset data) |
+| **Billing** | Current plan, upgrade to Pro, manage subscription |
 
 ---
 
-## Payments
+## API reference
 
-- Log **date received** and **amount**; notes are free text.
-- Payments are **not** auto-mapped to salary months; monthly view uses **cumulative paid through each cycle end** for comparison.
+### Auth
+| Method | Path | Description |
+|---|---|---|
+| POST | `/api/auth/register` | Create account |
+| POST | `/api/auth/login` | Get JWT token |
+| GET | `/api/auth/me` | Current user (includes `plan`) |
 
----
+### Clients
+| Method | Path | Description |
+|---|---|---|
+| GET | `/api/clients` | List all clients |
+| POST | `/api/clients` | Create client (free: max 1) |
+| PUT | `/api/clients/:id` | Update client |
+| DELETE | `/api/clients/:id` | Delete client (must have no sessions/payments) |
+| POST | `/api/clients/:id/default` | Set as default client |
 
-## Excel export
+### Sessions & Payments
+| Method | Path | Description |
+|---|---|---|
+| GET | `/api/sessions` | List sessions (query: `page`, `clientId`, `from`, `to`, `category`, `salaryMonth`, `search`, `flagged`) |
+| POST | `/api/sessions` | Create session |
+| PUT | `/api/sessions/:id` | Update session |
+| DELETE | `/api/sessions/:id` | Delete session |
+| GET | `/api/payments` | List payments (`?clientId=`) |
+| POST | `/api/payments` | Record payment |
+| PUT | `/api/payments/:id` | Update payment |
+| DELETE | `/api/payments/:id` | Delete payment |
 
-**Monthly** page → **Download Excel report**, or `GET /api/reports/export?from=&to=` (optional session date filter).
-
-Sheets: **Summary**, **Monthly Breakdown**, **Session Log**, **Payment Log**.
-
----
-
-## API summary
-
-| Method | Path | Purpose |
-|--------|------|---------|
-| POST | `/api/calendar/sync` | Body `{ from, to }` — fetch & insert sessions |
-| GET | `/api/calendar/status` | `hasToken`, `hasCredentials` |
-| GET | `/api/sessions` | Query: `page`, `from`, `to`, `category`, `salaryMonth`, `flagged`, `search`, `sortBy`, `sortDir` |
-| PUT | `/api/sessions/:id` | Manual overrides (`earnings`, `note`, `flagged`, `category`, `rateApplied`) |
-| DELETE | `/api/sessions/:id` | Remove session |
-| GET/POST/PUT/DELETE | `/api/payments` | Payment CRUD |
-| GET | `/api/reports/summary` | Dashboard totals |
+### Reports
+| Method | Path | Description |
+|---|---|---|
+| GET | `/api/reports/summary` | Dashboard totals (`?clientId=`) |
 | GET | `/api/reports/monthly` | Monthly breakdown array |
-| GET | `/api/reports/export` | Excel file stream |
-| GET | `/api/reports/invoice?month=` | PDF invoice for a salary month |
-| GET/PUT | `/api/config` | Read/write `config.json` |
-| GET | `/api/sync/log` | Last 10 sync rows |
-| GET | `/api/alerts/settings` | Get alert preferences |
-| PUT | `/api/alerts/settings` | Save alert preferences |
-| POST | `/api/alerts/test` | Send a test alert email immediately |
+| GET | `/api/reports/export` | Excel download |
+| GET | `/api/reports/invoice` | PDF invoice (`?month=&clientId=`) |
+| GET | `/api/reports/demand-letter` | PDF demand letter (`?clientId=`) |
 
----
+### Calendar & Sync
+| Method | Path | Description |
+|---|---|---|
+| POST | `/api/calendar/sync` | Sync from Google Calendar (`{ from, to }`) |
+| GET | `/api/calendar/status` | `hasToken`, `hasCredentials` |
+| GET | `/api/sync/log` | Last 10 sync records |
 
-## Offline behavior
+### Alerts
+| Method | Path | Description |
+|---|---|---|
+| GET | `/api/alerts/settings` | Get alert config |
+| PUT | `/api/alerts/settings` | Save alert config |
+| POST | `/api/alerts/test` | Send test alert now |
 
-After data is in SQLite, the app works **without internet**. Only **Sync** and **Google auth** need a connection.
-
-Re-sync **never deletes** sessions; existing `calendar_event_id` rows are skipped.
+### Billing
+| Method | Path | Description |
+|---|---|---|
+| GET | `/api/billing/status` | Current plan + subscription status |
+| POST | `/api/billing/checkout` | Create LemonSqueezy checkout URL |
+| POST | `/api/billing/portal` | Get customer portal URL (pro users) |
+| POST | `/api/billing/webhook` | LemonSqueezy webhook (HMAC-verified) |
 
 ---
 
 ## Project layout
 
 ```
-hours-tracker/
-├── package.json
-├── config.json
-├── .env
+tracking-bad-managers-salary-payment/
+├── .env                    ← your config (gitignored)
+├── .env.example
+├── render.yaml             ← one-click Render.com deploy
 ├── backend/
 │   ├── server.js
 │   ├── db/
-│   ├── routes/
-│   ├── services/
+│   │   ├── database.js     ← adapter dispatcher (SQLite or PostgreSQL)
+│   │   ├── migrations.js   ← all table schemas, idempotent
+│   │   ├── sqlite.js
+│   │   └── pg.js
 │   ├── middleware/
-│   ├── scripts/googleAuth.js
-│   ├── credentials.json   ← you add
-│   └── token.json         ← generated
-├── frontend/
-│   └── src/
-└── tracker.db             ← created under backend/ by default
+│   │   ├── auth.js         ← JWT requireAuth
+│   │   └── errorHandler.js
+│   ├── routes/             ← auth, clients, sessions, payments, reports,
+│   │                          calendar, sync, alerts, billing, config, import, admin
+│   ├── services/           ← balancer, calculator, invoice, demandLetter,
+│   │                          sessionSync, calendar, email, alert, lemonSqueezy
+│   └── scripts/googleAuth.js
+└── frontend/
+    └── src/
+        ├── App.jsx
+        ├── context/ClientContext.jsx
+        ├── lib/            ← api.js, auth.js, utils.js
+        ├── components/     ← Layout, Sidebar, ui/
+        └── pages/          ← Dashboard, Sessions, Payments, Monthly,
+                               Sync, Clients, Alerts, Settings, Billing
 ```
 
 ---
 
 ## Troubleshooting
 
-- **`credentials.json not found`** — place Desktop OAuth JSON in `backend/`.
-- **`Google Calendar not connected`** — run `cd backend && npm run auth`.
-- **`node:sqlite is not available`** — upgrade to **Node 22.5+** (e.g. install [Node 22 LTS](https://nodejs.org/) or use `nvm install 22`).
-- **`Cannot find module 'readable-stream'` / broken `node_modules`** — delete all `node_modules` folders and `package-lock.json`, then `npm install` again.
+| Problem | Fix |
+|---|---|
+| `credentials.json not found` | Save OAuth JSON as `backend/credentials.json` |
+| `Google Calendar not connected` | Run `cd backend && npm run auth` |
+| `node:sqlite is not available` | Upgrade to Node 22.5+ |
+| Broken `node_modules` / EPERM | Delete all `node_modules` + `package-lock.json`, re-run `npm install` |
+| EPERM on Windows with OneDrive | Pause OneDrive sync for this folder, or run terminal as Administrator |
+| Checkout button does nothing | Fill in `LEMONSQUEEZY_*` env vars |
+
+---
+
+## Contributors
+
+- [HozaifaDev](https://github.com/HozaifaDev) — founder & original author
+- [YoussefBastawisy](https://github.com/YoussefBastawisy) — contributor
 
 ---
 
 ## License
 
-Personal use; adapt freely for your own teaching workflow.
+Personal use — adapt freely for your own workflow.
