@@ -1,9 +1,10 @@
 import { Outlet } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Sidebar } from './Sidebar';
-import { getSummary } from '../lib/api';
+import { getSummary, getMe } from '../lib/api';
 import { Toaster } from 'sonner';
 import { useClient } from '../context/ClientContext';
+import { setUser } from '../lib/auth';
 
 export function Layout() {
   const { selectedClientId } = useClient();
@@ -14,8 +15,18 @@ export function Layout() {
   });
   const balance = data?.balance ?? 0;
 
+  useQuery({
+    queryKey: ['me'],
+    queryFn: async () => {
+      const user = await getMe();
+      setUser(user);
+      return user;
+    },
+    staleTime: 5 * 60_000,
+  });
+
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors">
       <Sidebar balance={balance} />
       <main className="pl-56">
         <div className="mx-auto max-w-7xl p-6">

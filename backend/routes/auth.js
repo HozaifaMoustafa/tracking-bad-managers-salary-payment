@@ -34,7 +34,7 @@ router.post('/register', async (req, res) => {
     [email.toLowerCase(), hash, name || null],
   );
   const user = await db.get('SELECT id, email, name, created_at FROM users WHERE id = ?', [lastId]);
-  res.status(201).json({ token: makeToken(user), user });
+  res.status(201).json({ token: makeToken(user), user: { ...user, onboarding_completed: false } });
 });
 
 router.post('/login', async (req, res) => {
@@ -54,18 +54,24 @@ router.post('/login', async (req, res) => {
     return res.status(401).json({ error: 'Invalid credentials' });
   }
 
-  const safe = { id: user.id, email: user.email, name: user.name, created_at: user.created_at };
+  const safe = { id: user.id, email: user.email, name: user.name, created_at: user.created_at, onboarding_completed: Boolean(user.onboarding_completed) };
   res.json({ token: makeToken(safe), user: safe });
 });
 
 router.get('/me', requireAuth, async (req, res) => {
   const db = await getDatabase();
   const user = await db.get(
-    'SELECT id, email, name, plan, created_at FROM users WHERE id = ?',
+    'SELECT id, email, name, plan, onboarding_completed, created_at FROM users WHERE id = ?',
     [req.user.id],
   );
   if (!user) return res.status(404).json({ error: 'User not found' });
-  res.json({ ...user, plan: user.plan || 'free' });
+  res.json({ ...user, plan: user.plan || 'free', onboarding_completed: Boolean(user.onboarding_completed) });
+});
+
+router.post('/complete-onboarding', requireAuth, async (req, res) => {
+  const db = await getDatabase();
+  await db.run('UPDATE users SET onboarding_completed = 1 WHERE id = ?', [req.user.id]);
+  res.json({ ok: true, onboarding_completed: true });
 });
 
 module.exports = router;

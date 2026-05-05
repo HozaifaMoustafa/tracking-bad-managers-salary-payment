@@ -2,6 +2,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard, CalendarDays, Wallet, BarChart3,
   RefreshCw, Settings, Clock, LogOut, Bell, Briefcase, ChevronDown, CreditCard, Zap,
+  Sun, Moon, Monitor,
 } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
@@ -9,6 +10,8 @@ import { cn, formatCurrency } from '../lib/utils';
 import { clearToken } from '../lib/auth';
 import { useClient } from '../context/ClientContext';
 import { getBillingStatus } from '../lib/api';
+import { useTheme } from '../context/ThemeContext';
+import { NotificationBell } from './NotificationBell';
 
 const links = [
   { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -21,6 +24,53 @@ const links = [
   { to: '/alerts',   label: 'Alerts',    icon: Bell },
   { to: '/billing',  label: 'Billing',   icon: CreditCard },
 ];
+
+function ThemeToggle() {
+  const { theme, setMode } = useTheme();
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    function handle(e) { if (ref.current && !ref.current.contains(e.target)) setOpen(false); }
+    document.addEventListener('mousedown', handle);
+    return () => document.removeEventListener('mousedown', handle);
+  }, []);
+
+  const currentIcon = theme === 'dark' ? Moon : theme === 'light' ? Sun : Monitor;
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-xs text-slate-400 hover:bg-slate-800 hover:text-white transition-colors"
+      >
+        <currentIcon className="h-3.5 w-3.5" />
+        <span className="capitalize">{theme === 'system' ? 'System' : theme}</span>
+      </button>
+      {open && (
+        <div className="absolute bottom-full left-0 mb-1 w-36 rounded-md border border-slate-700 bg-slate-800 shadow-lg z-50 py-1">
+          {[
+            { value: 'light', icon: Sun, label: 'Light' },
+            { value: 'dark', icon: Moon, label: 'Dark' },
+            { value: 'system', icon: Monitor, label: 'System' },
+          ].map(({ value, icon: Icon, label }) => (
+            <button
+              key={value}
+              onClick={() => { setMode(value); setOpen(false); }}
+              className={cn(
+                'flex w-full items-center gap-2 px-3 py-2 text-xs transition-colors',
+                theme === value ? 'text-indigo-300 font-semibold' : 'text-slate-300 hover:bg-slate-700',
+              )}
+            >
+              <Icon className="h-3.5 w-3.5" />
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export function Sidebar({ balance }) {
   const navigate = useNavigate();
@@ -37,7 +87,6 @@ export function Sidebar({ balance }) {
   const owed = balance > 0;
   const over = balance < 0;
 
-  // Close dropdown on outside click
   useEffect(() => {
     function handle(e) {
       if (dropRef.current && !dropRef.current.contains(e.target)) setDropOpen(false);
@@ -58,7 +107,6 @@ export function Sidebar({ balance }) {
         <span className="text-lg font-semibold">Hours Tracker</span>
       </div>
 
-      {/* Client switcher */}
       {clients.length > 0 && (
         <div className="relative border-b border-slate-800 p-3" ref={dropRef}>
           <button
@@ -141,6 +189,10 @@ export function Sidebar({ balance }) {
           <div className="text-slate-400">Balance</div>
           <div>{formatCurrency(balance)}</div>
         </div>
+
+        <NotificationBell />
+
+        <ThemeToggle />
 
         <button
           onClick={handleLogout}

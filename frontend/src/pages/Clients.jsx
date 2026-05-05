@@ -35,7 +35,7 @@ function WorkTypeEditor({ workTypes = [], onChange }) {
   return (
     <div className="space-y-3">
       {workTypes.map((wt, idx) => (
-        <div key={idx} className="rounded-lg border border-slate-100 bg-slate-50 p-3">
+        <div key={idx} className="rounded-lg border border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 p-3">
           <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
             <div>
               <Label className="text-xs">Name</Label>
@@ -129,7 +129,7 @@ function ClientForm({ initial, onSave, onCancel, saving }) {
       <div>
         <button
           type="button"
-          className="flex items-center gap-1 text-sm font-medium text-slate-600 hover:text-slate-900"
+          className="flex items-center gap-1 text-sm font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900"
           onClick={() => setShowConfig((v) => !v)}
         >
           {showConfig ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
@@ -145,8 +145,8 @@ function ClientForm({ initial, onSave, onCancel, saving }) {
           </div>
           <div className="border-t border-slate-200" />
           <div>
-            <div className="mb-2 text-sm font-medium text-slate-700">Work types</div>
-            <p className="mb-3 text-xs text-slate-500">
+            <div className="mb-2 text-sm font-medium text-slate-700 dark:text-slate-300">Work types</div>
+            <p className="mb-3 text-xs text-slate-500 dark:text-slate-400">
               Define every type of work you do for this client. Sessions are matched to work types by name, and earnings are auto-calculated.
             </p>
             <WorkTypeEditor workTypes={workTypes} onChange={setWorkTypes} />
@@ -213,8 +213,8 @@ export function Clients() {
     <div className="space-y-6">
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900">Clients</h1>
-          <p className="text-sm text-slate-500">Manage your clients / employers. Each has its own work types, rates, and payment history.</p>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Clients</h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Manage your clients / employers. Each has its own work types, rates, and payment history.</p>
         </div>
         <Button onClick={() => setAddOpen(true)}><Plus className="mr-2 h-4 w-4" />New client</Button>
       </div>
@@ -224,19 +224,19 @@ export function Clients() {
           const workTypes = c.config?.work_types || [];
           const isExpanded = expandedId === c.id;
           return (
-            <Card key={c.id} className={c.isDefault ? 'border-indigo-200' : ''}>
+            <Card key={c.id} className={c.isDefault ? 'border-indigo-200 dark:border-indigo-800' : ''}>
               <CardHeader className="pb-3">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div className="flex items-center gap-2">
                     <CardTitle className="text-base">{c.name}</CardTitle>
                     {c.isDefault && (
-                      <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-medium text-indigo-700">
+                      <span className="rounded-full bg-indigo-100 dark:bg-indigo-900 px-2 py-0.5 text-xs font-medium text-indigo-700 dark:text-indigo-300">
                         default
                       </span>
                     )}
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="text-xs text-slate-500">
+                    <span className="text-xs text-slate-500 dark:text-slate-400">
                       {c.currency} · cycle day {c.workCycleStartDay} · {workTypes.length} work type{workTypes.length !== 1 ? 's' : ''}
                     </span>
                     {!c.isDefault && (
@@ -264,7 +264,7 @@ export function Clients() {
               {workTypes.length > 0 && (
                 <CardContent className="pt-0">
                   <button
-                    className="flex items-center gap-1 text-xs text-slate-500 hover:text-slate-800"
+                    className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400 hover:text-slate-800"
                     onClick={() => setExpandedId(isExpanded ? null : c.id)}
                   >
                     {isExpanded ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
@@ -273,11 +273,11 @@ export function Clients() {
                   {isExpanded && (
                     <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                       {workTypes.map((wt) => (
-                        <div key={wt.name} className="flex items-center gap-2 rounded-md border border-slate-100 px-3 py-2">
+                        <div key={wt.name} className="flex items-center gap-2 rounded-md border border-slate-100 dark:border-slate-700 px-3 py-2">
                           <span className="h-3 w-3 shrink-0 rounded-full" style={{ backgroundColor: wt.color || '#6366f1' }} />
                           <div className="min-w-0">
                             <div className="truncate text-sm font-medium">{wt.name}</div>
-                            <div className="text-xs text-slate-500">
+                            <div className="text-xs text-slate-500 dark:text-slate-400">
                               {wt.rate_type === 'hourly' && `${wt.rate} ${c.currency}/hr`}
                               {wt.rate_type === 'per_session' && `${wt.rate} ${c.currency}/session`}
                               {wt.rate_type === 'milestone' && `${wt.rate} ${c.currency} on complete`}
@@ -295,7 +295,7 @@ export function Clients() {
 
         {clients.length === 0 && (
           <Card>
-            <CardContent className="py-12 text-center text-sm text-slate-500">
+            <CardContent className="py-12 text-center text-sm text-slate-500 dark:text-slate-400">
               No clients yet. Click "New client" to add your first employer or project.
             </CardContent>
           </Card>
@@ -338,7 +338,7 @@ export function Clients() {
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
-            <p className="text-sm text-slate-600">
+            <p className="text-sm text-slate-600 dark:text-slate-400">
               The free plan supports <strong>1 client</strong>. Upgrade to Pro
               for unlimited clients and everything we ship next.
             </p>

@@ -36,6 +36,10 @@ export async function getMe() {
   const { data } = await api.get('/auth/me');
   return data;
 }
+export async function completeOnboarding() {
+  const { data } = await api.post('/auth/complete-onboarding');
+  return data;
+}
 
 // Clients
 export async function getClients() {
@@ -171,6 +175,12 @@ export async function sendTestAlert() {
 // Admin
 export async function resetData({ scope = 'all' } = {}) {
   const { data } = await api.post('/admin/reset', { confirm: 'RESET', scope });
+  return data;
+}
+
+export async function getOverdueNotifications(clientId) {
+  const params = clientId ? { clientId } : {};
+  const { data } = await api.get('/notifications/overdue', { params });
   return data;
 }
 

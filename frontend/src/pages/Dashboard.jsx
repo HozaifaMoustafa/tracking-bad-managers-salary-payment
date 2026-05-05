@@ -34,7 +34,7 @@ export function Dashboard() {
 
   const s = qSummary.data;
   const monthly = qMonthly.data || [];
-  const recent = (qRecent.data?.data || []).slice(0, 10);
+  const recent = qRecent.isSuccess ? (qRecent.data?.data || []).slice(0, 10) : [];
 
   const barData = monthly.map((m) => ({ name: m.salaryMonth, earned: m.expectedEarnings }));
   const lineData = monthly.map((m) => ({ name: m.salaryMonth, earned: m.cumulativeEarned, paid: m.cumulativePaid }));
@@ -52,11 +52,26 @@ export function Dashboard() {
     );
   }
 
+  if (qSummary.isError || !s) {
+    return (
+      <div className="space-y-8">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Dashboard</h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400">Overview of earnings, payments, and recent sessions.</p>
+        </div>
+        <div className="bg-rose-50 text-rose-700 dark:bg-rose-950 dark:text-rose-300 rounded-lg p-4">
+          <p className="font-medium">Failed to load dashboard data</p>
+          <p className="text-sm mt-1">{qSummary.error?.response?.data?.error || qSummary.error?.message || 'An unexpected error occurred.'}</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Dashboard</h1>
-        <p className="text-sm text-slate-500">Overview of earnings, payments, and recent sessions.</p>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Dashboard</h1>
+        <p className="text-sm text-slate-500 dark:text-slate-400">Overview of earnings, payments, and recent sessions.</p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
@@ -74,11 +89,11 @@ export function Dashboard() {
           <CardHeader><CardTitle>Monthly expected earnings</CardTitle></CardHeader>
           <CardContent className="h-72">
             {barData.length === 0 ? (
-              <p className="text-sm text-slate-500">No session data yet.</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400">No session data yet.</p>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={barData}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-slate-200" />
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-slate-200 dark:stroke-slate-700" />
                   <XAxis dataKey="name" tick={{ fontSize: 10 }} />
                   <YAxis tick={{ fontSize: 10 }} />
                   <Tooltip formatter={(v) => formatCurrency(v)} />
@@ -93,11 +108,11 @@ export function Dashboard() {
           <CardHeader><CardTitle>Cumulative earned vs paid</CardTitle></CardHeader>
           <CardContent className="h-72">
             {lineData.length === 0 ? (
-              <p className="text-sm text-slate-500">No data for chart.</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400">No data for chart.</p>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={lineData}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-slate-200" />
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-slate-200 dark:stroke-slate-700" />
                   <XAxis dataKey="name" tick={{ fontSize: 10 }} />
                   <YAxis tick={{ fontSize: 10 }} />
                   <Tooltip formatter={(v) => formatCurrency(v)} />
@@ -118,7 +133,7 @@ export function Dashboard() {
         </CardHeader>
         <CardContent>
           {recent.length === 0 ? (
-            <p className="text-sm text-slate-500">No sessions yet.</p>
+            <p className="text-sm text-slate-500 dark:text-slate-400">No sessions yet.</p>
           ) : (
             <Table>
               <TableHeader>
