@@ -160,6 +160,16 @@ async function runMigrations(db) {
     try { await db.exec(sql); } catch (_) { /* already exists */ }
   }
 
+  // Mark existing users who already have clients as onboarded so they aren't
+  // redirected to the onboarding wizard on deploy.
+  try {
+    await db.exec(`
+      UPDATE users SET onboarding_completed = 1
+      WHERE onboarding_completed = 0
+        AND id IN (SELECT DISTINCT user_id FROM clients)
+    `);
+  } catch (_) { /* clients table may not exist yet on a fresh DB */ }
+
   // Add user_id columns to existing tables if they don't exist yet (idempotent)
   // These are required for multi-user support but may be missing in old DBs
   const userIdAlterations = [

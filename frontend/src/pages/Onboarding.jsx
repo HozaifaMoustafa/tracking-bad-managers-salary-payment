@@ -6,13 +6,11 @@ import { toast } from 'sonner';
 import { createClient } from '../lib/api';
 import { completeOnboarding } from '../lib/api';
 import { setUser, getUser } from '../lib/auth';
-import { useClient } from '../context/ClientContext';
 
 const CURRENCIES = ['EGP', 'USD', 'EUR', 'GBP', 'SAR', 'AED', 'QAR', 'KWD', 'INR', 'PKR'];
 
 export function OnboardingWizard() {
   const navigate = useNavigate();
-  const { setSelectedClientId } = useClient();
   const [step, setStep] = useState(0);
 
   const [name, setName] = useState('');
@@ -21,8 +19,7 @@ export function OnboardingWizard() {
 
   const mutClient = useMutation({
     mutationFn: createClient,
-    onSuccess: (c) => {
-      setSelectedClientId(c.id);
+    onSuccess: () => {
       finish();
     },
     onError: (e) => toast.error(e.response?.data?.error || 'Failed to create client'),
