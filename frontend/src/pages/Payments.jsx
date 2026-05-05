@@ -69,14 +69,14 @@ export function Payments() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Payments</h1>
-        <p className="text-sm text-slate-500">Log money received (not tied to a specific salary month).</p>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Payments</h1>
+        <p className="text-sm text-slate-500 dark:text-slate-400">Log money received (not tied to a specific salary month).</p>
       </div>
 
-      <Card className="border-indigo-100 bg-indigo-50/50">
+      <Card className="border-indigo-100 dark:border-indigo-800 bg-indigo-50/50 dark:bg-indigo-950/50">
         <CardContent className="py-4">
-          <div className="text-sm text-slate-600">Total received (all time)</div>
-          <div className="text-2xl font-bold text-indigo-900">{formatCurrency(summary?.totalPaid ?? 0)}</div>
+          <div className="text-sm text-slate-600 dark:text-slate-400">Total received (all time)</div>
+          <div className="text-2xl font-bold text-indigo-900 dark:text-indigo-200">{formatCurrency(summary?.totalPaid ?? 0)}</div>
         </CardContent>
       </Card>
 
@@ -135,7 +135,7 @@ export function Payments() {
                 ))}
               </TableBody>
             </Table>
-            {withRunning.length === 0 && <p className="py-8 text-center text-sm text-slate-500">No payments yet.</p>}
+            {withRunning.length === 0 && <p className="py-8 text-center text-sm text-slate-500 dark:text-slate-400">No payments yet.</p>}
           </CardContent>
         </Card>
       )}

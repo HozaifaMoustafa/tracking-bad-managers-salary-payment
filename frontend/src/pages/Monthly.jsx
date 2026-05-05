@@ -46,8 +46,8 @@ export function Monthly() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Monthly breakdown</h1>
-        <p className="text-sm text-slate-500">Per salary cycle: expected earnings and running balance vs payments.</p>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Monthly breakdown</h1>
+        <p className="text-sm text-slate-500 dark:text-slate-400">Per salary cycle: expected earnings and running balance vs payments.</p>
       </div>
 
       <ProGate feature="Monthly breakdown">
@@ -94,10 +94,10 @@ export function Monthly() {
                 {(data || []).map((m) => (
                   <TableRow
                     key={m.salaryMonth}
-                    className={m.runningBalance > 0 ? 'border-l-4 border-l-rose-400 bg-rose-50/30' : ''}
+                    className={m.runningBalance > 0 ? 'border-l-4 border-l-rose-400 bg-rose-50/30 dark:bg-rose-950/30' : ''}
                   >
                     <TableCell className="font-medium">{m.salaryMonth}</TableCell>
-                    <TableCell className="text-xs text-slate-600">{m.cyclePeriod}</TableCell>
+                    <TableCell className="text-xs text-slate-600 dark:text-slate-400">{m.cyclePeriod}</TableCell>
                     <TableCell>{m.sessionsCount}</TableCell>
                     <TableCell>{m.totalHours.toFixed(2)}</TableCell>
                     <TableCell>{formatCurrency(m.expectedEarnings)}</TableCell>
@@ -122,7 +122,7 @@ export function Monthly() {
               </TableBody>
             </Table>
             {(!data || data.length === 0) && (
-              <p className="py-8 text-center text-sm text-slate-500">No session months yet.</p>
+              <p className="py-8 text-center text-sm text-slate-500 dark:text-slate-400">No session months yet.</p>
             )}
           </CardContent>
         </Card>

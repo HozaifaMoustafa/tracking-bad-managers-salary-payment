@@ -154,9 +154,21 @@ async function runMigrations(db) {
     'ALTER TABLE users ADD COLUMN ls_customer_id TEXT',
     'ALTER TABLE users ADD COLUMN ls_subscription_id TEXT',
     'ALTER TABLE users ADD COLUMN ls_subscription_status TEXT',
+    'ALTER TABLE users ADD COLUMN onboarding_completed INTEGER DEFAULT 0',
   ];
   for (const sql of userAlterations) {
     try { await db.exec(sql); } catch (_) { /* already exists */ }
+  }
+
+  // Add user_id columns to existing tables if they don't exist yet (idempotent)
+  // These are required for multi-user support but may be missing in old DBs
+  const userIdAlterations = [
+    'ALTER TABLE sessions ADD COLUMN user_id INTEGER NOT NULL DEFAULT 1',
+    'ALTER TABLE payments ADD COLUMN user_id INTEGER NOT NULL DEFAULT 1',
+    'ALTER TABLE sync_log ADD COLUMN user_id INTEGER NOT NULL DEFAULT 1',
+  ];
+  for (const sql of userIdAlterations) {
+    try { await db.exec(sql); } catch (_) { /* column already exists */ }
   }
 
   // Add client_id columns to existing tables if they don't exist yet (idempotent)

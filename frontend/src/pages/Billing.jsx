@@ -31,7 +31,7 @@ function Check() {
   return <CheckCircle className="mx-auto h-4 w-4 text-emerald-500" />;
 }
 function Cross() {
-  return <XCircle className="mx-auto h-4 w-4 text-slate-300" />;
+  return <XCircle className="mx-auto h-4 w-4 text-slate-300 dark:text-slate-600" />;
 }
 
 export function Billing() {
@@ -67,26 +67,26 @@ export function Billing() {
   return (
     <div className="mx-auto max-w-2xl space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Billing</h1>
-        <p className="text-sm text-slate-500">Manage your plan and subscription.</p>
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Billing</h1>
+        <p className="text-sm text-slate-500 dark:text-slate-400">Manage your plan and subscription.</p>
       </div>
 
       {/* Current plan card */}
       {isLoading ? (
         <Skeleton className="h-36 w-full" />
       ) : isPro ? (
-        <Card className="border-indigo-300 bg-indigo-50/60">
+        <Card className="border-indigo-300 bg-indigo-50/60 dark:bg-indigo-950/60">
           <CardHeader>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <CreditCard className="h-5 w-5 text-indigo-600" />
+                <CreditCard className="h-5 w-5 text-indigo-600 dark:text-indigo-400" />
                 <CardTitle className="text-base">Pro plan</CardTitle>
               </div>
               <span className="rounded-full bg-indigo-600 px-3 py-0.5 text-xs font-semibold text-white">PRO</span>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
-            <p className="text-sm text-slate-600">
+            <p className="text-sm text-slate-600 dark:text-slate-400">
               You have unlimited clients and access to all features.
               {billing?.subscriptionStatus === 'cancelled' && (
                 <span className="ml-2 font-medium text-amber-600">
@@ -105,7 +105,7 @@ export function Billing() {
         <div className="space-y-4">
           {/* Billing cycle toggle */}
           <div className="flex items-center justify-center">
-            <div className="flex rounded-lg border border-slate-200 bg-slate-100 p-1 gap-1">
+            <div className="flex rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 p-1 gap-1">
               {(['monthly', 'annual']).map((c) => (
                 <button
                   key={c}
@@ -113,8 +113,8 @@ export function Billing() {
                   className={cn(
                     'relative flex items-center gap-1.5 rounded-md px-4 py-1.5 text-sm font-medium transition-all',
                     cycle === c
-                      ? 'bg-white text-slate-900 shadow-sm'
-                      : 'text-slate-500 hover:text-slate-700',
+                      ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 shadow-sm'
+                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300',
                   )}
                 >
                   {c === 'annual' ? 'Annual' : 'Monthly'}
@@ -129,15 +129,15 @@ export function Billing() {
           </div>
 
           {/* Pricing card */}
-          <Card className="border-indigo-200 bg-gradient-to-br from-indigo-50/60 to-white">
+          <Card className="border-indigo-200 dark:border-indigo-800 bg-gradient-to-br from-indigo-50/60 dark:from-indigo-950/60 to-white dark:to-slate-900">
             <CardContent className="pt-8 pb-8 flex flex-col items-center text-center gap-6">
               <div>
                 <div className="flex items-end justify-center gap-1">
-                  <span className="text-5xl font-bold text-slate-900">{pricing.price}</span>
-                  <span className="mb-2 text-sm text-slate-500">{pricing.period}</span>
+                  <span className="text-5xl font-bold text-slate-900 dark:text-slate-100">{pricing.price}</span>
+                  <span className="mb-2 text-sm text-slate-500 dark:text-slate-400">{pricing.period}</span>
                 </div>
                 {pricing.sub && (
-                  <p className="mt-1 text-xs text-slate-400">{pricing.sub}</p>
+                  <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">{pricing.sub}</p>
                 )}
               </div>
 
@@ -151,7 +151,7 @@ export function Billing() {
                 {mutCheckout.isPending ? 'Redirecting…' : `Upgrade to Pro — ${pricing.price}`}
               </Button>
 
-              <p className="text-xs text-slate-400">
+              <p className="text-xs text-slate-400 dark:text-slate-500">
                 Secure payment via LemonSqueezy · Cancel anytime
               </p>
             </CardContent>
@@ -167,24 +167,24 @@ export function Billing() {
         <CardContent>
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b text-left text-xs text-slate-500">
+              <tr className="border-b text-left text-xs text-slate-500 dark:text-slate-400">
                 <th className="pb-2 font-medium">Feature</th>
                 <th className="pb-2 text-center font-medium w-24">Free</th>
-                <th className="pb-2 text-center font-medium w-24 text-indigo-600">Pro</th>
+                <th className="pb-2 text-center font-medium w-24 text-indigo-600 dark:text-indigo-400">Pro</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
               {FEATURES.map((f) => (
                 <tr key={f.label}>
-                  <td className="py-2.5 text-slate-700">{f.label}</td>
+                  <td className="py-2.5 text-slate-700 dark:text-slate-300">{f.label}</td>
                   <td className="py-2.5 text-center">
                     {f.free === true ? <Check /> : f.free === false ? <Cross /> : (
-                      <span className="text-xs text-slate-500">{f.free}</span>
+                      <span className="text-xs text-slate-500 dark:text-slate-400">{f.free}</span>
                     )}
                   </td>
                   <td className="py-2.5 text-center">
                     {f.pro === true ? <Check /> : f.pro === false ? <Cross /> : (
-                      <span className="text-xs font-semibold text-indigo-600">{f.pro}</span>
+                      <span className="text-xs font-semibold text-indigo-600 dark:text-indigo-400">{f.pro}</span>
                     )}
                   </td>
                 </tr>
@@ -195,7 +195,7 @@ export function Billing() {
       </Card>
 
       {process.env.NODE_ENV !== 'production' && (
-        <p className="text-xs text-slate-400 text-center">
+        <p className="text-xs text-slate-400 dark:text-slate-500 text-center">
           Billing is powered by LemonSqueezy. Configure <code>LEMONSQUEEZY_*</code> env vars in <code>backend/.env</code> to activate.
         </p>
       )}

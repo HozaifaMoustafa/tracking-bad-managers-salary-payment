@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Clock } from 'lucide-react';
 import { login } from '../lib/api';
-import { setToken } from '../lib/auth';
+import { setToken, setUser } from '../lib/auth';
 
 export function Login() {
   const navigate = useNavigate();
@@ -16,9 +16,10 @@ export function Login() {
     setError('');
     setLoading(true);
     try {
-      const { token } = await login(email, password);
+      const { token, user } = await login(email, password);
       setToken(token);
-      navigate('/dashboard');
+      setUser(user);
+      navigate(user.onboarding_completed ? '/dashboard' : '/onboarding');
     } catch (err) {
       setError(err.response?.data?.error || 'Login failed');
     } finally {

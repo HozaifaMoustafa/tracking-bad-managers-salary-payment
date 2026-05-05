@@ -62,10 +62,10 @@
 ### 2d — UX Improvements
 | Task | Status |
 |---|---|
-| PWA / mobile-friendly layout | 🔲 Todo |
-| Dark/light theme toggle | 🔲 Todo |
-| Notification bell for overdue balance | 🔲 Todo |
-| Onboarding wizard (first-time setup guide) | 🔲 Todo |
+| PWA / mobile-friendly layout | ✅ Done |
+| Dark/light theme toggle | ✅ Done |
+| Notification bell for overdue balance | ✅ Done |
+| Onboarding wizard (first-time setup guide) | ✅ Done |
 
 ---
 

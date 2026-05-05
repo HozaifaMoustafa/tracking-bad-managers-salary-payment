@@ -22,6 +22,7 @@ const adminRouter = require('./routes/admin');
 const alertsRouter = require('./routes/alerts');
 const clientsRouter = require('./routes/clients');
 const { router: billingRouter, handleWebhook: billingWebhook } = require('./routes/billing');
+const notificationsRouter = require('./routes/notifications');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -52,6 +53,7 @@ app.use('/api/admin', requireAuth, adminRouter);
 app.use('/api/alerts', requireAuth, alertsRouter);
 app.use('/api/clients', requireAuth, clientsRouter);
 app.use('/api/billing', requireAuth, billingRouter);
+app.use('/api/notifications', requireAuth, notificationsRouter);
 
 app.use(errorHandler);
 

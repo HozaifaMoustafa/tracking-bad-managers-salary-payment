@@ -59,8 +59,8 @@ export function Alerts() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900">Alert Settings</h1>
-        <p className="text-sm text-slate-500">
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Alert Settings</h1>
+        <p className="text-sm text-slate-500 dark:text-slate-400">
           Get an email when your salary is overdue by more than a set number of days.
         </p>
       </div>
@@ -70,7 +70,7 @@ export function Alerts() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <div className="flex items-center gap-2">
-            <Bell className="h-4 w-4 text-indigo-500" />
+            <Bell className="h-4 w-4 text-indigo-500 dark:text-indigo-400" />
             <CardTitle className="text-base">Email Notifications</CardTitle>
           </div>
           {isConfigured && (
@@ -78,7 +78,7 @@ export function Alerts() {
               className={
                 form.enabled
                   ? 'bg-emerald-100 text-emerald-700'
-                  : 'bg-slate-100 text-slate-500'
+                  : 'bg-slate-100 text-slate-500 dark:text-slate-400'
               }
             >
               {form.enabled ? 'Enabled' : 'Disabled'}
@@ -97,7 +97,7 @@ export function Alerts() {
                 value={form.alert_email}
                 onChange={(e) => set('alert_email', e.target.value)}
               />
-              <p className="mt-1 text-xs text-slate-400">
+              <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
                 Where to send overdue payment notifications.
               </p>
             </div>
@@ -113,7 +113,7 @@ export function Alerts() {
                 onChange={(e) => set('threshold_days', Number(e.target.value))}
                 className="max-w-[120px]"
               />
-              <p className="mt-1 text-xs text-slate-400">
+              <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">
                 Alert when a salary cycle ends and remains unpaid for this many days.
               </p>
             </div>
@@ -122,8 +122,8 @@ export function Alerts() {
 
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-slate-700">Enable alerts</p>
-                <p className="text-xs text-slate-400">Uncheck to pause without losing your settings.</p>
+                <p className="text-sm font-medium text-slate-700 dark:text-slate-300">Enable alerts</p>
+                <p className="text-xs text-slate-400 dark:text-slate-500">Uncheck to pause without losing your settings.</p>
               </div>
               <input
                 type="checkbox"
@@ -135,7 +135,7 @@ export function Alerts() {
           </div>
 
           {data?.last_alerted_at && (
-            <div className="flex items-center gap-2 rounded-md bg-slate-50 px-3 py-2 text-xs text-slate-500">
+            <div className="flex items-center gap-2 rounded-md bg-slate-50 dark:bg-slate-800 px-3 py-2 text-xs text-slate-500 dark:text-slate-400">
               <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
               Last alert sent: {formatDate(data.last_alerted_at)}
             </div>
@@ -165,8 +165,8 @@ export function Alerts() {
         )}
       </div>
 
-      <div className="rounded-md border border-slate-200 bg-slate-50 p-4 text-xs text-slate-500 space-y-1 max-w-lg">
-        <p className="font-medium text-slate-600">How it works</p>
+      <div className="rounded-md border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 p-4 text-xs text-slate-500 dark:text-slate-400 space-y-1 max-w-lg">
+        <p className="font-medium text-slate-600 dark:text-slate-400">How it works</p>
         <p>Every day at 9:00 AM the server checks your unpaid salary cycles.</p>
         <p>If any cycle ended more than <strong>{form.threshold_days} day{form.threshold_days !== 1 ? 's' : ''}</strong> ago and still has an outstanding balance, you'll receive an email.</p>
         <p>You'll receive at most one alert per 20 hours to avoid spam.</p>

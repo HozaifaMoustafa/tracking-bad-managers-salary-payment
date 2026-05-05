@@ -13,17 +13,17 @@ export function StatCard({ title, value, subtitle, icon: Icon, tone = 'default' 
             ? 'text-emerald-600'
             : tone === 'overpaid'
               ? 'text-amber-600'
-              : 'text-slate-900';
+              : 'text-slate-900 dark:text-slate-100';
 
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-sm font-medium text-slate-500">{title}</CardTitle>
-        {Icon && <Icon className={cn('h-5 w-5 text-slate-400', toneCls)} />}
+        <CardTitle className="text-sm font-medium text-slate-500 dark:text-slate-400">{title}</CardTitle>
+        {Icon && <Icon className={cn('h-5 w-5 text-slate-400 dark:text-slate-500', toneCls)} />}
       </CardHeader>
       <CardContent>
         <div className={cn('text-3xl font-bold', toneCls)}>{value}</div>
-        {subtitle && <p className="mt-1 text-xs text-slate-500">{subtitle}</p>}
+        {subtitle && <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{subtitle}</p>}
       </CardContent>
     </Card>
   );

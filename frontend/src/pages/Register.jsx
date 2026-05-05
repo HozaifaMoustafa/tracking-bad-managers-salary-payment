@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Clock } from 'lucide-react';
 import { register } from '../lib/api';
-import { setToken } from '../lib/auth';
+import { setToken, setUser } from '../lib/auth';
 
 export function Register() {
   const navigate = useNavigate();
@@ -17,9 +17,10 @@ export function Register() {
     setError('');
     setLoading(true);
     try {
-      const { token } = await register(email, password, name);
+      const { token, user } = await register(email, password, name);
       setToken(token);
-      navigate('/dashboard');
+      setUser(user);
+      navigate('/onboarding');
     } catch (err) {
       setError(err.response?.data?.error || 'Registration failed');
     } finally {

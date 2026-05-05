@@ -12,16 +12,24 @@ import { Clients } from './pages/Clients';
 import { Billing } from './pages/Billing';
 import { Login } from './pages/Login';
 import { Register } from './pages/Register';
+import { OnboardingWizard } from './pages/Onboarding';
 import { ClientProvider } from './context/ClientContext';
-import { isLoggedIn } from './lib/auth';
+import { isLoggedIn, isOnboarded } from './lib/auth';
 
 function ProtectedRoute({ children }) {
   return isLoggedIn() ? children : <Navigate to="/login" replace />;
 }
 
-// Root: landing page for guests, redirect to dashboard for logged-in users
+function OnboardingRoute({ children }) {
+  if (!isLoggedIn()) return <Navigate to="/login" replace />;
+  if (isOnboarded()) return <Navigate to="/dashboard" replace />;
+  return children;
+}
+
 function RootPage() {
-  return isLoggedIn() ? <Navigate to="/dashboard" replace /> : <Landing />;
+  if (!isLoggedIn()) return <Landing />;
+  if (!isOnboarded()) return <Navigate to="/onboarding" replace />;
+  return <Navigate to="/dashboard" replace />;
 }
 
 export default function App() {
@@ -30,7 +38,14 @@ export default function App() {
       <Route path="/" element={<RootPage />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
-
+      <Route
+        path="/onboarding"
+        element={
+          <OnboardingRoute>
+            <OnboardingWizard />
+          </OnboardingRoute>
+        }
+      />
       <Route
         path="/"
         element={
