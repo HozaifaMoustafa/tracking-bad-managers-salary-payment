@@ -90,10 +90,10 @@
 | `/billing` page — plan status, upgrade CTA, feature comparison table | ✅ Done |
 | Webhook handler — subscription_created / updated / cancelled / expired | ✅ Done |
 | "Upgrade to Pro" CTA in Sidebar + upgrade dialog in /clients | ✅ Done |
+| Landing page at root `/` | ✅ Done |
 | Configure LS env vars + webhook URL in production | 🔲 Todo (deploy step) |
 | Team / organization model (many instructors, one manager view) | 🔲 Todo |
 | Usage analytics dashboard (admin) | 🔲 Todo |
-| Landing page & marketing site | 🔲 Todo |
 
 ---
 
@@ -116,7 +116,7 @@
 | Layer | Current | Target (production) |
 |---|---|---|
 | Backend | Node.js 22+, Express, SQLite | Node.js 22+, Express, PostgreSQL (Render) |
-| Frontend | React 18, Vite, Tailwind, TanStack Query | Same + PWA |
+| Frontend | React 18, Vite, Tailwind, TanStack Query, PWA | Same |
 | Auth | JWT (bcryptjs + jsonwebtoken) | Same |
 | Deploy | Local | Render.com (backend + DB) + Vercel (frontend) |
 
@@ -142,7 +142,7 @@ npm run dev                  # starts on :3001
 # Frontend (separate terminal)
 cd frontend
 npm install
-npm run dev                  # starts on :3000
+npm run dev                  # starts on :5173
 ```
 
 No DATABASE_URL → SQLite is used automatically. No Google credentials → Calendar sync is disabled; use manual entry or ICS import instead.

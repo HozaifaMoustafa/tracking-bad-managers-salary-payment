@@ -17,6 +17,10 @@ A **multi-user SaaS** for instructors and freelancers who want to track unpaid w
 | Work session tracking (manual entry + ICS import)              | ✅    | ✅         |
 | Payment history & running balance                              | ✅    | ✅         |
 | PDF invoice per salary cycle                                   | ✅    | ✅         |
+| Dark / light / system theme                                    | ✅    | ✅         |
+| Overdue notification bell (in-app)                             | ✅    | ✅         |
+| PWA — installable on mobile & desktop                          | ✅    | ✅         |
+| Onboarding wizard for new users                                | ✅    | ✅         |
 | Number of clients / employers                                  | 1    | Unlimited |
 | Monthly breakdown & reports                                    | ❌    | ✅         |
 | Excel export                                                   | ❌    | ✅         |
@@ -72,7 +76,8 @@ Open **[http://localhost:5173](http://localhost:5173)**, register an account, an
 | `SMTP_FROM`                   | No       | From address shown in alert emails                                                |
 | `LEMONSQUEEZY_API_KEY`        | No       | LS API key — from Settings → API                                                  |
 | `LEMONSQUEEZY_STORE_ID`       | No       | LS store ID — from Settings → Stores                                              |
-| `LEMONSQUEEZY_VARIANT_ID`     | No       | Pro plan variant ID                                                               |
+| `LEMONSQUEEZY_VARIANT_ID_MONTHLY` | No   | Pro plan monthly variant ID                                                       |
+| `LEMONSQUEEZY_VARIANT_ID_ANNUAL`  | No   | Pro plan annual variant ID                                                        |
 | `LEMONSQUEEZY_WEBHOOK_SECRET` | No       | Webhook signing secret from LS dashboard                                          |
 | `APP_URL`                     | No       | Public frontend URL (used for checkout redirect, default `http://localhost:5173`) |
 | `GOOGLE_CALENDAR_ID`          | No       | Calendar ID for Google sync                                                       |
@@ -166,17 +171,18 @@ When a user upgrades, LemonSqueezy fires the webhook and the app sets their plan
 ## UI pages
 
 
-| Page          | Purpose                                                                   |
-| ------------- | ------------------------------------------------------------------------- |
-| **Dashboard** | Balance, charts (expected vs paid per month, cumulative), recent sessions |
-| **Sessions**  | Add, edit, delete, filter, and paginate work sessions                     |
-| **Payments**  | Log payments received; running total column                               |
-| **Monthly**   | Per-cycle breakdown — download invoice or demand letter per cycle         |
-| **Sync**      | Google Calendar sync with date range and sync log                         |
-| **Clients**   | Add/edit/delete clients; configure work types, currency, cycle day        |
-| **Alerts**    | Configure overdue email alerts                                            |
-| **Settings**  | Danger zone (reset data)                                                  |
-| **Billing**   | Current plan, upgrade to Pro, manage subscription                         |
+| Page           | Purpose                                                                   |
+| -------------- | ------------------------------------------------------------------------- |
+| **Onboarding** | First-time setup wizard — create first client, then redirects to dashboard |
+| **Dashboard**  | Balance, charts (expected vs paid per month, cumulative), recent sessions |
+| **Sessions**   | Add, edit, delete, filter, and paginate work sessions                     |
+| **Payments**   | Log payments received; running total column                               |
+| **Monthly**    | Per-cycle breakdown — download invoice or demand letter per cycle         |
+| **Sync**       | Google Calendar sync with date range and sync log                         |
+| **Clients**    | Add/edit/delete clients; configure work types, currency, cycle day        |
+| **Alerts**     | Configure overdue email alerts                                            |
+| **Settings**   | Danger zone (reset data)                                                  |
+| **Billing**    | Current plan, upgrade to Pro, manage subscription                         |
 
 
 ---
@@ -186,11 +192,12 @@ When a user upgrades, LemonSqueezy fires the webhook and the app sets their plan
 ### Auth
 
 
-| Method | Path                 | Description                    |
-| ------ | -------------------- | ------------------------------ |
-| POST   | `/api/auth/register` | Create account                 |
-| POST   | `/api/auth/login`    | Get JWT token                  |
-| GET    | `/api/auth/me`       | Current user (includes `plan`) |
+| Method | Path                             | Description                             |
+| ------ | -------------------------------- | --------------------------------------- |
+| POST   | `/api/auth/register`             | Create account                          |
+| POST   | `/api/auth/login`                | Get JWT token                           |
+| GET    | `/api/auth/me`                   | Current user (includes `plan`)          |
+| POST   | `/api/auth/complete-onboarding`  | Mark user as onboarded                  |
 
 
 ### Clients
@@ -252,6 +259,14 @@ When a user upgrades, LemonSqueezy fires the webhook and the app sets their plan
 | POST   | `/api/alerts/test`     | Send test alert now |
 
 
+### Notifications
+
+
+| Method | Path                          | Description                                          |
+| ------ | ----------------------------- | ---------------------------------------------------- |
+| GET    | `/api/notifications/overdue`  | Overdue cycles for the bell (`?clientId=`)           |
+
+
 ### Billing
 
 
@@ -283,18 +298,20 @@ tracking-bad-managers-salary-payment/
 │   │   ├── auth.js         ← JWT requireAuth
 │   │   └── errorHandler.js
 │   ├── routes/             ← auth, clients, sessions, payments, reports,
-│   │                          calendar, sync, alerts, billing, config, import, admin
+│   │                          calendar, sync, alerts, billing, notifications,
+│   │                          config, import, admin
 │   ├── services/           ← balancer, calculator, invoice, demandLetter,
 │   │                          sessionSync, calendar, email, alert, lemonSqueezy
 │   └── scripts/googleAuth.js
 └── frontend/
+    ├── public/             ← manifest.json, sw.js, icons/
     └── src/
         ├── App.jsx
-        ├── context/ClientContext.jsx
+        ├── context/        ← ClientContext.jsx, ThemeContext.jsx
         ├── lib/            ← api.js, auth.js, utils.js
-        ├── components/     ← Layout, Sidebar, ui/
-        └── pages/          ← Dashboard, Sessions, Payments, Monthly,
-                               Sync, Clients, Alerts, Settings, Billing
+        ├── components/     ← Layout, Sidebar, NotificationBell, ui/
+        └── pages/          ← Onboarding, Dashboard, Sessions, Payments,
+                               Monthly, Sync, Clients, Alerts, Settings, Billing
 ```
 
 ---
